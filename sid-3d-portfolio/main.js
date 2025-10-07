@@ -32,6 +32,7 @@ themeToggle.addEventListener("click", () => {
 // THREE.JS SCENE
 let renderer, scene, camera, composer;
 let knot, particlesNear, particlesFar, title3D, tagline3D, pointerGlow, holoAvatar, clock;
+let bgVideoMesh = null, bgVideoTexture = null;
 const canvas = document.getElementById("scene");
 
 function init() {
@@ -46,6 +47,9 @@ function init() {
   scene.fog = new THREE.FogExp2(0x0a0b10, 0.06);
   camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 120);
   camera.position.set(0, 0.6, 3.2);
+
+  // Background 3D video plane (behind everything)
+  createVideoBackground();
 
   // Lights
   const hemi = new THREE.HemisphereLight(0x88ccff, 0x223344, 0.7);
@@ -67,11 +71,13 @@ function init() {
   scene.add(knot);
 
   // Starfield - near layer
-  particlesNear = makeStarfield(1400, 3.2, 0x77ffff, 0.024);
+  const nearCount = window.innerWidth < 640 ? 700 : 1400;
+  particlesNear = makeStarfield(nearCount, 3.2, 0x77ffff, 0.024);
   scene.add(particlesNear);
 
   // Starfield - far layer
-  particlesFar = makeStarfield(2200, 8.0, 0x88bbff, 0.018);
+  const farCount = window.innerWidth < 640 ? 1200 : 2200;
+  particlesFar = makeStarfield(farCount, 8.0, 0x88bbff, 0.018);
   scene.add(particlesFar);
 
   // 3D Title and Tagline
@@ -99,7 +105,7 @@ function init() {
     const renderPass = new THREE.RenderPass(scene, camera);
     const unrealBloomPass = new THREE.UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.95,
+      window.innerWidth < 640 ? 0.75 : 0.95,
       0.65,
       0.02
     );
@@ -140,7 +146,42 @@ function makeStarfield(count, radius, color, size) {
     opacity: 0.85,
     depthWrite: false
   });
-  return new THREE.Points(g, m);
+  const pts = new THREE.Points(g, m);
+  pts.renderOrder = 0; // ensure background layer
+  return pts;
+}
+
+// Create a video texture background plane
+function createVideoBackground() {
+  try {
+    const video = document.createElement("video");
+    video.src = "https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4";
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.loop = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.style.display = "none";
+    document.body.appendChild(video);
+
+    video.addEventListener("canplay", () => {
+      video.play().catch(() => {});
+      bgVideoTexture = new THREE.VideoTexture(video);
+      bgVideoTexture.colorSpace = THREE.SRGBColorSpace;
+      bgVideoTexture.minFilter = THREE.LinearFilter;
+      bgVideoTexture.magFilter = THREE.LinearFilter;
+      const mat = new THREE.MeshBasicMaterial({ map: bgVideoTexture, depthWrite: false });
+      const geo = new THREE.PlaneGeometry(1, 1);
+      bgVideoMesh = new THREE.Mesh(geo, mat);
+      bgVideoMesh.position.set(0, 0.5, -5);
+      bgVideoMesh.renderOrder = -1; // behind everything
+      scene.add(bgVideoMesh);
+      onResize(); // fit to viewport
+    });
+  } catch (e) {
+    // if video fails, we simply rely on the starfields
+    bgVideoMesh = null;
+  }
 }
 
 function buildTitle3D() {
@@ -194,6 +235,7 @@ function buildTagline3D() {
       });
       tagline3D = new THREE.Mesh(tg, mat);
       tagline3D.position.set(0, 0.98, 0.1);
+      tagline3D.renderOrder = 2;
       scene.add(tagline3D);
     });
   } catch (e) {
@@ -256,7 +298,8 @@ function buildHologramAvatar() {
           gl_FragColor = vec4(col, 0.92);
         }
       `,
-      transparent: true
+      transparent: true,
+      depthWrite: false
     });
     holoAvatar = new THREE.Mesh(plane, mat);
     holoAvatar.position.set(-1.2, 0.95, 0.2);
@@ -276,9 +319,13 @@ function animate() {
   knot.scale.set(s, s, s);
 
   // starfields drift parallax
-  particlesNear.rotation.y = t * 0.015;
-  particlesNear.rotation.x = Math.sin(t * 0.04) * 0.015;
-  particlesFar.rotation.y = -t * 0.008;
+  if (particlesNear) {
+    particlesNear.rotation.y = t * 0.015;
+    particlesNear.rotation.x = Math.sin(t * 0.04) * 0.015;
+  }
+  if (particlesFar) {
+    particlesFar.rotation.y = -t * 0.008;
+  }
 
   // title shimmer
   if (title3D) {
@@ -295,11 +342,16 @@ function animate() {
   }
 
   // pointer glow breathing
-  pointerGlow.scale.setScalar(1 + Math.sin(t * 2.0) * 0.08);
+  if (pointerGlow) pointerGlow.scale.setScalar(1 + Math.sin(t * 2.0) * 0.08);
 
   // hologram shader time
   if (holoAvatar && holoAvatar.material && holoAvatar.material.uniforms) {
     holoAvatar.material.uniforms.time.value = t;
+  }
+
+  // update background video texture if present
+  if (bgVideoTexture) {
+    bgVideoTexture.needsUpdate = true;
   }
 
   if (composer) composer.render();
@@ -311,6 +363,15 @@ function onResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+
+  // fit bg video plane to viewport aspect
+  if (bgVideoMesh) {
+    const aspect = window.innerWidth / window.innerHeight;
+    const height = 10; // fixed height in world units
+    const width = height * aspect;
+    bgVideoMesh.scale.set(width, height, 1);
+    bgVideoMesh.position.set(0, 0.5, -5);
+  }
 
   // responsive positioning
   const isMobile = window.innerWidth < 640;
@@ -330,6 +391,11 @@ window.addEventListener("scroll", () => {
   lastScroll = y;
   camera.position.y = 0.6 + Math.min(0.7, y * 0.0006);
   camera.position.z = 3.2 + Math.min(1.2, y * 0.0008);
+
+  // subtle bg video parallax
+  if (bgVideoMesh) {
+    bgVideoMesh.position.z = -5 - Math.min(1.0, y * 0.0006);
+  }
 });
 
 // Mouse interaction
