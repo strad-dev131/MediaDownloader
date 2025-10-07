@@ -1,0 +1,9 @@
+services:
+  telegram-music-bot:
+    build: .
+    environment:
+      API_ID: "${API_ID}"
+      API_HASH: "${API_HASH}"
+      BOT_TOKEN: "${BOT_TOKEN}"
+      ASSISTANT_ID: "${ASSISTANT_ID}"
+    restart: unless-stopped

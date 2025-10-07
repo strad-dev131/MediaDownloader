@@ -1,0 +1,5 @@
+pyrogram>=2.0.0,<3.0.0
+pytgcalls==2.1.0
+yt-dlp>=2024.08.12
+python-dotenv>=1.0.0
+requests>=2.31.0
