@@ -31,7 +31,7 @@ themeToggle.addEventListener("click", () => {
 
 // THREE.JS SCENE
 let renderer, scene, camera, composer;
-let knot, particlesNear, particlesFar, title3D, pointerGlow, clock;
+let knot, particlesNear, particlesFar, title3D, tagline3D, pointerGlow, holoAvatar, clock;
 const canvas = document.getElementById("scene");
 
 function init() {
@@ -74,8 +74,12 @@ function init() {
   particlesFar = makeStarfield(2200, 8.0, 0x88bbff, 0.018);
   scene.add(particlesFar);
 
-  // 3D Title
+  // 3D Title and Tagline
   buildTitle3D();
+  buildTagline3D();
+
+  // Holographic avatar plane
+  buildHologramAvatar();
 
   // Pointer glow (small emissive sphere that follows cursor)
   const glowGeo = new THREE.SphereGeometry(0.06, 24, 24);
@@ -95,7 +99,7 @@ function init() {
     const renderPass = new THREE.RenderPass(scene, camera);
     const unrealBloomPass = new THREE.UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.9,
+      0.95,
       0.65,
       0.02
     );
@@ -142,7 +146,7 @@ function makeStarfield(count, radius, color, size) {
 function buildTitle3D() {
   try {
     const loader = new THREE.FontLoader();
-    loader.load("https://unpkg.com/three@0.162.0/examples/fonts/helvetiker_regular.typeface.json", (font) => {
+    loader.load("https://unpkg.com/three@0.162.0/examples/fonts/helvetiker_bold.typeface.json", (font) => {
       const textGeo = new THREE.TextGeometry("SID", {
         font,
         size: 0.42,
@@ -158,16 +162,107 @@ function buildTitle3D() {
       const textMat = new THREE.MeshStandardMaterial({
         color: 0x6cf9ff,
         emissive: 0x224455,
-        metalness: 0.8,
-        roughness: 0.15
+        metalness: 0.85,
+        roughness: 0.12
       });
       title3D = new THREE.Mesh(textGeo, textMat);
-      title3D.position.set(0, 1.35, -0.2);
+      title3D.position.set(0, 1.28, -0.2);
       scene.add(title3D);
     });
   } catch (e) {
     title3D = null;
   }
+}
+
+function buildTagline3D() {
+  try {
+    const loader = new THREE.FontLoader();
+    loader.load("https://unpkg.com/three@0.162.0/examples/fonts/helvetiker_regular.typeface.json", (font) => {
+      const tg = new THREE.TextGeometry("Team Leadership • Web Bot Dev • Ethical Hacking", {
+        font,
+        size: 0.12,
+        height: 0.02,
+        curveSegments: 6,
+        bevelEnabled: false
+      });
+      tg.center();
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x88eaff,
+        emissive: 0x123344,
+        metalness: 0.6,
+        roughness: 0.35
+      });
+      tagline3D = new THREE.Mesh(tg, mat);
+      tagline3D.position.set(0, 0.98, 0.1);
+      scene.add(tagline3D);
+    });
+  } catch (e) {
+    tagline3D = null;
+  }
+}
+
+function buildHologramAvatar() {
+  const texLoader = new THREE.TextureLoader();
+  texLoader.setCrossOrigin("anonymous");
+  texLoader.load("https://aboutsid.netlify.app/avatar.svg", (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const plane = new THREE.PlaneGeometry(0.9, 0.9, 1, 1);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: { value: tex },
+        time: { value: 0.0 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying float vFresnel;
+        void main() {
+          vUv = uv;
+          vec3 N = normalize(normalMatrix * normal);
+          vec3 I = normalize(normalMatrix * (vec3(0.0, 0.0, 1.0)));
+          vFresnel = pow(1.0 - dot(N, I), 3.0);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float time;
+        varying vec2 vUv;
+        varying float vFresnel;
+
+        // simple rgb shift
+        vec3 rgbShift(vec2 uv, float amt) {
+          float a = amt;
+          float r = texture2D(tDiffuse, uv + vec2(a, 0.0)).r;
+          float g = texture2D(tDiffuse, uv).g;
+          float b = texture2D(tDiffuse, uv - vec2(a, 0.0)).b;
+          return vec3(r, g, b);
+        }
+
+        void main() {
+          float scan = 0.06 * sin((vUv.y * 60.0) + time * 6.0);
+          float flicker = 0.05 * sin(time * 12.0);
+          float noise = fract(sin(dot(vUv.xy ,vec2(12.9898,78.233))) * 43758.5453) * 0.03;
+
+          vec3 col = rgbShift(vUv, 0.003 + 0.002 * sin(time * 4.0));
+          col += scan + flicker + noise;
+
+          // holographic tint
+          vec3 tint = vec3(0.6, 1.0, 1.0);
+          col = mix(col, col * tint, 0.35);
+
+          // fresnel rim glow
+          col += vFresnel * vec3(0.3, 0.5, 0.8);
+
+          gl_FragColor = vec4(col, 0.92);
+        }
+      `,
+      transparent: true
+    });
+    holoAvatar = new THREE.Mesh(plane, mat);
+    holoAvatar.position.set(-1.2, 0.95, 0.2);
+    holoAvatar.rotation.y = 0.12;
+    scene.add(holoAvatar);
+  });
 }
 
 function animate() {
@@ -188,11 +283,24 @@ function animate() {
   // title shimmer
   if (title3D) {
     title3D.rotation.y = Math.sin(t * 0.2) * 0.08;
-    title3D.position.y = 1.35 + Math.sin(t * 0.6) * 0.02;
+    title3D.position.y = 1.28 + Math.sin(t * 0.6) * 0.02;
+  }
+  // tagline pulsing and hue shift effect
+  if (tagline3D) {
+    tagline3D.rotation.z = Math.sin(t * 0.3) * 0.02;
+    tagline3D.position.y = 0.98 + Math.sin(t * 0.9) * 0.01;
+    const hue = (Math.sin(t * 0.5) * 0.5 + 0.5); // 0..1
+    const c = new THREE.Color().setHSL(0.55 + hue * 0.1, 0.8, 0.6);
+    tagline3D.material.color.copy(c);
   }
 
   // pointer glow breathing
   pointerGlow.scale.setScalar(1 + Math.sin(t * 2.0) * 0.08);
+
+  // hologram shader time
+  if (holoAvatar && holoAvatar.material && holoAvatar.material.uniforms) {
+    holoAvatar.material.uniforms.time.value = t;
+  }
 
   if (composer) composer.render();
   else renderer.render(scene, camera);
@@ -203,6 +311,15 @@ function onResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+
+  // responsive positioning
+  const isMobile = window.innerWidth < 640;
+  if (title3D) title3D.position.set(0, isMobile ? 1.18 : 1.28, -0.2);
+  if (tagline3D) tagline3D.position.set(0, isMobile ? 0.92 : 0.98, 0.1);
+  if (holoAvatar) {
+    holoAvatar.position.set(isMobile ? -0.6 : -1.2, isMobile ? 0.85 : 0.95, 0.2);
+    holoAvatar.scale.setScalar(isMobile ? 0.8 : 1);
+  }
 }
 window.addEventListener("resize", onResize);
 
