@@ -36,6 +36,8 @@ let trailGeom, trailPositions, trailMax;
 let bgVideoMesh = null, bgVideoTexture = null;
 const canvas = document.getElementById("scene");
 const dummy = new THREE.Object3D();
+const heroEl = document.querySelector(".hero-content");
+const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
 function init() {
   // Renderer
@@ -43,6 +45,8 @@ function init() {
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // Make canvas transparent so HTML video shows through
+  renderer.setClearColor(0x000000, 0);
 
   // Scene and camera
   scene = new THREE.Scene();
@@ -261,7 +265,11 @@ function buildTagline3D() {
 function buildHologramAvatar() {
   const texLoader = new THREE.TextureLoader();
   texLoader.setCrossOrigin("anonymous");
-  texLoader.load("https://api.dicebear.com/7.x/bottts/png?seed=Sid&size=512&backgroundType=gradient&backgroundColor=6cf9ff,8a6cff", (tex) => {
+
+  const primary = "https://api.dicebear.com/7.x/bottts/png?seed=Sid&size=512&backgroundType=gradient&backgroundColor=6cf9ff,8a6cff";
+  const fallback = "https://aboutsid.netlify.app/avatar.svg";
+
+  const buildMesh = (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     const plane = new THREE.PlaneGeometry(0.9, 0.9, 1, 1);
     const mat = new THREE.ShaderMaterial({
@@ -320,6 +328,12 @@ function buildHologramAvatar() {
     holoAvatar.position.set(-1.2, 0.95, 0.2);
     holoAvatar.rotation.y = 0.12;
     scene.add(holoAvatar);
+  };
+
+  texLoader.load(primary, (tex) => {
+    buildMesh(tex);
+  }, undefined, () => {
+    texLoader.load(fallback, (tex) => buildMesh(tex));
   });
 }
 
@@ -534,25 +548,41 @@ window.addEventListener("mousemove", (e) => {
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   gsap.to(knot.rotation, { x: mouse.y * 0.2, y: mouse.x * 0.3, duration: 0.6, ease: "power2.out" });
 
-  // pointer glow follows the cursor with slight depth
+  // pointer glow follows the cursor with slight depth and ripple
   const xWorld = mouse.x * 0.8;
   const yWorld = 0.8 + mouse.y * 0.4;
   gsap.to(pointerGlow.position, { x: xWorld, y: yWorld, z: 1.4, duration: 0.4, ease: "power2.out" });
+  if (pointerGlow) {
+    gsap.fromTo(pointerGlow.scale, { x: 1, y: 1, z: 1 }, { x: 1.2, y: 1.2, z: 1.2, duration: 0.2, yoyo: true, repeat: 1, ease: "power2.out" });
+  }
+
+  // hero tilt based on cursor (desktop only)
+  if (heroEl && !isTouchDevice) {
+    const tiltY = mouse.x * 6;     // left/right
+    const tiltX = mouse.y * -5;    // up/down
+    heroEl.style.transform = `rotateY(${tiltY}deg) rotateX(${tiltX}deg) translateZ(0)`;
+  }
 
   // leave a particle trail
   pushTrail(xWorld, yWorld, 1.4);
 });
-
-// Card hover glow effect
+window.addEventListener("mouseleave", () => {
+  if (heroEl) heroEl.style.transform = "none";
+});>
+// Card hover glow + 3D tilt effect
 document.querySelectorAll(".card").forEach(card => {
-  card.addEventListener("mousemove", (e) => {
+  const onMove = (e) => {
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     card.style.setProperty("--mx", `${x}px`);
     card.style.setProperty("--my", `${y}px`);
-  });
-});
+
+    // 3D tilt
+    const nx = (x / rect.width) * 2 - 1;   // -1..1
+    const ny = (y / rect.height) * 2 - 1;  // -1..1
+    const rotY = nx * 6;   // left/right
+    const rotX = -ny * 
 
 // Kick off
 init();
