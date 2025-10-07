@@ -17,7 +17,7 @@ html, body{
   color: var(--text);
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 }
-body{ margin: 0; overflow-x: hidden; }
+body{ margin: 0; overflow-x: hidden; cursor: crosshair; }
 
 #scene{
   position: fixed;
@@ -34,7 +34,11 @@ body{ margin: 0; overflow-x: hidden; }
   padding: 96px 24px;
   max-width: 1200px;
   margin: 0 auto;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .6s ease, transform .6s ease;
 }
+.section.reve
 
 .site-header{
   position: fixed;
@@ -150,6 +154,13 @@ h2{ font-size: 28px; margin-bottom: 16px; }
   background: radial-gradient(200px 200px at 30% 10%, rgba(108,249,255,0.10), transparent 60%);
   pointer-events: none;
 }
+.card{
+  --mx: 50%;
+  --my: 50%;
+  background:
+    radial-gradient(220px 220px at var(--mx) var(--my), rgba(108,249,255,0.08), transparent 60%),
+    var(--card_code);new
+</}
 .card .status{ color: #9af0ff; font-weight: 600; }
 .card .tags{ color: var(--muted); font-size: 14px; }
 
