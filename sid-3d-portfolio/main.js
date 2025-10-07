@@ -151,35 +151,33 @@ function makeStarfield(count, radius, color, size) {
   return pts;
 }
 
-// Create a video texture background plane
+// Create a video texture background plane (uses the HTML video element as source)
 function createVideoBackground() {
   try {
-    const video = document.createElement("video");
-    video.src = "https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4";
-    video.crossOrigin = "anonymous";
+    const video = document.getElementById("bgVideo");
+    if (!video) return;
+
+    // ensure playback on mobile
     video.muted = true;
     video.loop = true;
     video.autoplay = true;
     video.playsInline = true;
-    video.style.display = "none";
-    document.body.appendChild(video);
+    video.play().catch(() => { /* user gesture may be required; will start once user interacts */ });
 
-    video.addEventListener("canplay", () => {
-      video.play().catch(() => {});
-      bgVideoTexture = new THREE.VideoTexture(video);
-      bgVideoTexture.colorSpace = THREE.SRGBColorSpace;
-      bgVideoTexture.minFilter = THREE.LinearFilter;
-      bgVideoTexture.magFilter = THREE.LinearFilter;
-      const mat = new THREE.MeshBasicMaterial({ map: bgVideoTexture, depthWrite: false });
-      const geo = new THREE.PlaneGeometry(1, 1);
-      bgVideoMesh = new THREE.Mesh(geo, mat);
-      bgVideoMesh.position.set(0, 0.5, -5);
-      bgVideoMesh.renderOrder = -1; // behind everything
-      scene.add(bgVideoMesh);
-      onResize(); // fit to viewport
-    });
+    bgVideoTexture = new THREE.VideoTexture(video);
+    bgVideoTexture.colorSpace = THREE.SRGBColorSpace;
+    bgVideoTexture.minFilter = THREE.LinearFilter;
+    bgVideoTexture.magFilter = THREE.LinearFilter;
+
+    const mat = new THREE.MeshBasicMaterial({ map: bgVideoTexture, depthWrite: false });
+    const geo = new THREE.PlaneGeometry(1, 1);
+    bgVideoMesh = new THREE.Mesh(geo, mat);
+    bgVideoMesh.position.set(0, 0.5, -5);
+    bgVideoMesh.renderOrder = -1; // behind everything
+    scene.add(bgVideoMesh);
+    onResize(); // fit to viewport
   } catch (e) {
-    // if video fails, we simply rely on the starfields
+    // if video fails, we simply rely on the starfields and HTML video background
     bgVideoMesh = null;
   }
 }
