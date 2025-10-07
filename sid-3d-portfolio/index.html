@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <title>Siddhartha Abhimanyu — Futuristic 3D Portfolio</title>
+    <meta name="description" content="Siddhartha Abhimanyu (Sid) — Team Leadership, Web Bot Dev, Ethical Hacking. Explore featured bots, services, and contact details." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <!-- Three.js and PostProcessing -->
+    <script defer src="https://unpkg.com/three@0.162.0/build/three.min.js"></script>
+    <script defer src="https://unpkg.com/three@0.162.0/examples/jsm/postprocessing/EffectComposer.js"></script>
+    <script defer src="https://unpkg.com/three@0.162.0/examples/jsm/postprocessing/RenderPass.js"></script>
+    <script defer src="https://unpkg.com/three@0.162.0/examples/jsm/postprocessing/UnrealBloomPass.js"></script>
+    <!-- GSAP for subtle UI animations -->
+    <script defer src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <header class="site-header">
+      <div class="brand">
+        <span class="logo-dot"></span>
+        <span class="brand-name">SID</span>
+      </div>
+      <nav>
+        <a href="#hero">Home</a>
+        <a href="#projects">Projects</a>
+        <a href="#services">Services</a>
+        <a href="#journey">Journey</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <button id="themeToggle" aria-label="Toggle theme">Theme</button>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section id="hero" class="section hero">
+        <div class="hero-content">
+          <img class="avatar" alt="Siddhartha Abhimanyu" src="https://aboutsid.netlify.app/avatar.svg" />
+          <h1>
+            I'm <span class="accent">Siddhartha Abhimanyu (Sid)</span>
+          </h1>
+          <p class="subtitle">Team Leadership • Web Bot Dev • Ethical Hacking Enthusiast</p>
+          <div class="cta">
+            <a class="btn primary" href="#projects">View My Work</a>
+            <a class="btn ghost" href="#contact">Get in Touch</a>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value">5+</div>
+              <div class="stat-label">Active Bots</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">100+</div>
+              <div class="stat-label">Projects</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">24/7</div>
+              <div class="stat-label">Availability</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SKILLS -->
+      <section id="skills" class="section">
+        <h2>Skills & Expertise</h2>
+        <div class="skills-grid">
+          <div class="skill"><span>Leadership &amp; Management</span><div class="bar"><div style="width:95%"></div></div></div>
+          <div class="skill"><span>Bot Development</span><div class="bar"><div style="width:90%"></div></div></div>
+          <div class="skill"><span>Website Designing</span><div class="bar"><div style="width:88%"></div></div></div>
+          <div class="skill"><span>AI Innovation</span><div class="bar"><div style="width:87%"></div></div></div>
+          <div class="skill"><span>Artificial Intelligence</span><div class="bar"><div style="width:85%"></div></div></div>
+          <div class="skill"><span>Ethical Hacking</span><div class="bar"><div style="width:80%"></div></div></div>
+        </div>
+      </section>
+
+      <!-- PROJECTS -->
+      <section id="projects" class="section">
+        <h2>Featured Projects</h2>
+        <div class="cards">
+          <article class="card">
+            <h3>@sidduXMusicBot</h3>
+            <p class="status">Active</p>
+            <p>Advanced Telegram music bot with AI-powered features and seamless streaming capabilities.</p>
+            <p class="tags">Python • Telegram API • AI</p>
+            <a class="btn small" href="https://t.me/sidduXMusicBot" target="_blank" rel="noopener">Try Bot</a>
+          </article>
+          <article class="card">
+            <h3>@vivanmusicbot</h3>
+            <p class="status">Active</p>
+            <p>High-performance music streaming bot with advanced queue management and user preferences.</p>
+            <p class="tags">Python • asyncio • Redis</p>
+            <a class="btn small" href="https://t.me/vivanmusicbot" target="_blank" rel="noopener">Try Bot</a>
+          </article>
+          <article class="card">
+            <h3>@Bloody_musicbot</h3>
+            <p class="status">Active</p>
+            <p>Feature-rich music bot with custom playlists, voice commands, and smart recommendations.</p>
+            <p class="tags">Python • ML • Voice AI</p>
+            <a class="btn small" href="https://t.me/Bloody_musicbot" target="_blank" rel="noopener">Try Bot</a>
+          </article>
+          <article class="card">
+            <h3>@ButterXMusicRBot</h3>
+            <p class="status">Active</p>
+            <p>Next-gen music bot with revolutionary features and lightning-fast performance.</p>
+            <p class="tags">Python • FastAPI • WebRTC</p>
+            <a class="btn small" href="https://t.me/ButterXMusicRBot" target="_blank" rel="noopener">Try Bot</a>
+          </article>
+        </div>
+      </section>
+
+      <!-- SERVICES -->
+      <section id="services" class="section">
+        <h2>Services & Offerings</h2>
+        <div class="cards">
+          <article class="card">
+            <h3>Telegram Groups & Channels</h3>
+            <p>Premium established Telegram groups and channels with active communities. Perfect for business growth and marketing.</p>
+            <p class="tags">Active Members • Verified Groups • Instant Transfer</p>
+          </article>
+          <article class="card">
+            <h3>Custom Telegram Bots</h3>
+            <p>Professional Telegram bots tailored to your needs: music, admin, business — with advanced features.</p>
+            <p class="tags">24/7 Support • Custom Features • AI Powered</p>
+          </article>
+          <article class="card">
+            <h3>Premium Apps at Low Cost</h3>
+            <p>Genuine premium subscriptions at significantly reduced prices. Spotify, Netflix, Adobe, and more.</p>
+            <p class="tags">Up to 80% Savings • Warranty</p>
+          </article>
+          <article class="card">
+            <h3>Social Media Growth</h3>
+            <p>Boost your presence with organic followers, engagement, and reach across all major platforms.</p>
+            <p class="tags">Organic Growth • Real Engagement • All Platforms</p>
+          </article>
+          <article class="card">
+            <h3>Project Development</h3>
+            <p>Web dev, bot creation, and AI integration with quality code and fast delivery.</p>
+            <p class="tags">Expert Team • Fast Delivery • Quality Code</p>
+          </article>
+          <article class="card">
+            <h3>Consultation & Support</h3>
+            <p>Technical consultation and ongoing support for strategy, implementation, and maintenance.</p>
+            <p class="tags">24/7 • Expert Advice • Long-term Support</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- JOURNEY -->
+      <section id="journey" class="section">
+        <h2>My Journey</h2>
+        <div class="timeline">
+          <div class="tl-item"><span class="year">2020</span><h3>The Beginning</h3><p>Started coding journey with Python, fascinated by automation and possibilities.</p></div>
+          <div class="tl-item"><span class="year">2021</span><h3>First Bot Creation</h3><p>Developed first Telegram bot, sparking passion for bot development and AI.</p></div>
+          <div class="tl-item"><span class="year">2022</span><h3>Team Leadership</h3><p>Started leading development teams and managing complex projects.</p></div>
+          <div class="tl-item"><span class="year">2023</span><h3>Ethical Hacking</h3><p>Ventured into cybersecurity and ethical hacking, expanding skillset.</p></div>
+          <div class="tl-item"><span class="year">2024</span><h3>Innovation Era</h3><p>Launched multiple successful bots, gained recognition in developer community.</p></div>
+          <div class="tl-item"><span class="year">2025+</span><h3>The Future</h3><p>Building next-generation AI solutions and revolutionary technologies.</p></div>
+        </div>
+      </section>
+
+      <!-- CONTACT -->
+      <section id="contact" class="section contact">
+        <h2>Let's Connect</h2>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <ul class="contacts">
+              <li><span>Telegram</span> <a href="https://t.me/Elite_Sid" target="_blank" rel="noopener">@Elite_Sid</a></li>
+              <li><span>WhatsApp</span> <a href="https://wa.me/639513139927" target="_blank" rel="noopener">+63 951 313 9927</a></li>
+              <li><span>Email</span> <a href="mailto:elitesid23@gmail.com">elitesid23@gmail.com</a></li>
+              <li><span>LinkedIn</span> <a href="https://in.linkedin.com/in/siddhartha-abhimanyu-b14b65371" target="_blank" rel="noopener">Siddhartha Abhimanyu</a></li>
+              <li><span>Team Chat</span> <a href="https://t.me/TeamsXchat" target="_blank" rel="noopener">@TeamsXchat</a></li>
+            </ul>
+          </div>
+          <form class="contact-form" name="contact" method="POST" data-netlify="true">
+            <input type="hidden" name="form-name" value="contact" />
+            <label>
+              Your Name
+              <input name="name" type="text" placeholder="Your Name" required />
+            </label>
+            <label>
+              Your Email
+              <input name="email" type="email" placeholder="you@example.com" required />
+            </label>
+            <label>
+              Your Message
+              <textarea name="message" rows="5" placeholder="Tell me about your project..." required></textarea>
+            </label>
+            <button class="btn primary" type="submit">Send Message</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>© <span id="year"></span> Siddhartha Abhimanyu — Built with Three.js</p>
+    </footer>
+
+    <script defer src="./main.js"></script>
+  </body>
+</html>
