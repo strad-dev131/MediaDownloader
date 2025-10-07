@@ -169,7 +169,17 @@ function createVideoBackground() {
     video.loop = true;
     video.autoplay = true;
     video.playsInline = true;
-    video.play().catch(() => { /* user gesture may be required; will start once user interacts */ });
+
+    const tryPlay = () => {
+      if (video.paused) {
+        video.play().catch(() => {});
+      }
+    };
+    // attempt immediately and on user interaction/visibility changes
+    tryPlay();
+    document.addEventListener("pointerdown", tryPlay);
+    document.addEventListener("touchstart", tryPlay, { passive: true });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) tryPlay(); });
 
     bgVideoTexture = new THREE.VideoTexture(video);
     bgVideoTexture.colorSpace = THREE.SRGBColorSpace;
@@ -515,7 +525,8 @@ window.addEventListener("scroll", () => {
   if (bgVideoMesh) {
     bgVideoMesh.position.z = -5 - Math.min(1.0, y * 0.0006);
   }
-});>
+});
+
 // Mouse interaction
 const mouse = new THREE.Vector2();
 window.addEventListener("mousemove", (e) => {
@@ -528,7 +539,9 @@ window.addEventListener("mousemove", (e) => {
   const yWorld = 0.8 + mouse.y * 0.4;
   gsap.to(pointerGlow.position, { x: xWorld, y: yWorld, z: 1.4, duration: 0.4, ease: "power2.out" });
 
- ;
+  // leave a particle trail
+  pushTrail(xWorld, yWorld, 1.4);
+});
 
 // Card hover glow effect
 document.querySelectorAll(".card").forEach(card => {
