@@ -31,9 +31,11 @@ themeToggle.addEventListener("click", () => {
 
 // THREE.JS SCENE
 let renderer, scene, camera, composer;
-let knot, particlesNear, particlesFar, title3D, tagline3D, pointerGlow, holoAvatar, clock;
+let knot, particlesNear, particlesFar, title3D, tagline3D, pointerGlow, pointerTrail, holoAvatar, orbitersInst, orbitersData, rings, clock;
+let trailGeom, trailPositions, trailMax;
 let bgVideoMesh = null, bgVideoTexture = null;
 const canvas = document.getElementById("scene");
+const dummy = new THREE.Object3D();
 
 function init() {
   // Renderer
@@ -99,6 +101,11 @@ function init() {
   pointerGlow = new THREE.Mesh(glowGeo, glowMat);
   pointerGlow.position.set(0, 0.8, 1.4);
   scene.add(pointerGlow);
+
+  // Extra 3D elements
+  createGlowRings();
+  createOrbiters();
+  createPointerTrail();
 
   // Post-processing bloom
   try {
@@ -244,7 +251,7 @@ function buildTagline3D() {
 function buildHologramAvatar() {
   const texLoader = new THREE.TextureLoader();
   texLoader.setCrossOrigin("anonymous");
-  texLoader.load("https://aboutsid.netlify.app/avatar.svg", (tex) => {
+  texLoader.load("https://api.dicebear.com/7.x/bottts/png?seed=Sid&size=512&backgroundType=gradient&backgroundColor=6cf9ff,8a6cff", (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     const plane = new THREE.PlaneGeometry(0.9, 0.9, 1, 1);
     const mat = new THREE.ShaderMaterial({
@@ -306,6 +313,90 @@ function buildHologramAvatar() {
   });
 }
 
+// Glow rings around the centerpiece
+function createGlowRings() {
+  rings = [];
+  const colors = [0x6cf9ff, 0x8a6cff, 0x9af0ff];
+  const radii = [0.95, 1.25, 1.6];
+  const thickness = [0.015, 0.012, 0.010];
+  for (let i = 0; i < radii.length; i++) {
+    const geo = new THREE.TorusGeometry(radii[i], thickness[i], 16, 100);
+    const mat = new THREE.MeshBasicMaterial({
+      color: colors[i],
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending
+    });
+    const ring = new THREE.Mesh(geo, mat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 0.5;
+    rings.push(ring);
+    scene.add(ring);
+  }
+}
+
+// Instanced orbiting shapes for extra 3D motion
+function createOrbiters() {
+  const count = window.innerWidth < 640 ? 120 : 240;
+  const geo = new THREE.IcosahedronGeometry(0.05, 0);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x9af0ff,
+    emissive: 0x223344,
+    metalness: 0.7,
+    roughness: 0.32
+  });
+  orbitersInst = new THREE.InstancedMesh(geo, mat, count);
+  orbitersData = [];
+  for (let i = 0; i < count; i++) {
+    const radius = 1.1 + Math.random() * 0.9;
+    const speed = 0.2 + Math.random() * 0.4;
+    const yAmp = 0.12 + Math.random() * 0.22;
+    const angle = Math.random() * Math.PI * 2;
+    orbitersData.push({ radius, speed, yAmp, angle });
+    dummy.position.set(
+      Math.cos(angle) * radius,
+      0.5 + Math.sin(angle) * yAmp,
+      Math.sin(angle) * radius
+    );
+    dummy.rotation.set(Math.random() * 0.6, Math.random() * 0.6, Math.random() * 0.6);
+    dummy.updateMatrix();
+    orbitersInst.setMatrixAt(i, dummy.matrix);
+  }
+  scene.add(orbitersInst);
+}
+
+// Pointer trail particles
+function createPointerTrail() {
+  trailMax = window.innerWidth < 640 ? 48 : 80;
+  trailPositions = new Float32Array(trailMax * 3);
+  trailGeom = new THREE.BufferGeometry();
+  trailGeom.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
+  const mat = new THREE.PointsMaterial({
+    color: 0x88eaff,
+    size: 0.035,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  pointerTrail = new THREE.Points(trailGeom, mat);
+  pointerTrail.renderOrder = 3;
+  scene.add(pointerTrail);
+}
+
+function pushTrail(x, y, z) {
+  if (!trailPositions) return;
+  for (let i = trailMax - 1; i > 0; i--) {
+    trailPositions[i * 3] = trailPositions[(i - 1) * 3];
+    trailPositions[i * 3 + 1] = trailPositions[(i - 1) * 3 + 1];
+    trailPositions[i * 3 + 2] = trailPositions[(i - 1) * 3 + 2];
+  }
+  trailPositions[0] = x;
+  trailPositions[1] = y;
+  trailPositions[2] = z;
+  if (trailGeom) trailGeom.attributes.position.needsUpdate = true;
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
@@ -315,6 +406,36 @@ function animate() {
   knot.rotation.x = Math.sin(t * 0.4) * 0.1;
   const s = 1 + Math.sin(t * 0.8) * 0.03;
   knot.scale.set(s, s, s);
+
+  // glow rings animate
+  if (rings && rings.length) {
+    rings.forEach((ring, i) => {
+      ring.rotation.y = t * (0.12 + i * 0.08);
+      ring.rotation.z = Math.sin(t * (0.25 + i * 0.14)) * 0.25;
+      ring.scale.setScalar(1 + Math.sin(t * (0.9 + i * 0.2)) * 0.02);
+    });
+  }
+
+  // orbiters motion
+  if (orbitersInst && orbitersData) {
+    for (let i = 0; i < orbitersData.length; i++) {
+      const d = orbitersData[i];
+      const ang = d.angle + t * d.speed;
+      dummy.position.set(
+        Math.cos(ang) * d.radius,
+        0.5 + Math.sin(t * 2.0 + i) * d.yAmp,
+        Math.sin(ang) * d.radius
+      );
+      dummy.rotation.set(
+        Math.sin(t + i) * 0.6,
+        Math.cos(t * 0.7 + i) * 0.6,
+        Math.sin(t * 0.5 + i) * 0.6
+      );
+      dummy.updateMatrix();
+      orbitersInst.setMatrixAt(i, dummy.matrix);
+    }
+    orbitersInst.instanceMatrix.needsUpdate = true;
+  }
 
   // starfields drift parallax
   if (particlesNear) {
@@ -394,8 +515,7 @@ window.addEventListener("scroll", () => {
   if (bgVideoMesh) {
     bgVideoMesh.position.z = -5 - Math.min(1.0, y * 0.0006);
   }
-});
-
+});>
 // Mouse interaction
 const mouse = new THREE.Vector2();
 window.addEventListener("mousemove", (e) => {
@@ -407,7 +527,8 @@ window.addEventListener("mousemove", (e) => {
   const xWorld = mouse.x * 0.8;
   const yWorld = 0.8 + mouse.y * 0.4;
   gsap.to(pointerGlow.position, { x: xWorld, y: yWorld, z: 1.4, duration: 0.4, ease: "power2.out" });
-});
+
+ ;
 
 // Card hover glow effect
 document.querySelectorAll(".card").forEach(card => {
