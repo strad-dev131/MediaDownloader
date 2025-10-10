@@ -311,8 +311,11 @@ function buildHologramAvatar() {
   const texLoader = new THREE.TextureLoader();
   texLoader.setCrossOrigin("anonymous");
 
-  const primary = "https://api.dicebear.com/7.x/bottts/png?seed=Sid&size=512&backgroundType=gradient&backgroundColor=6cf9ff,8a6cff";
-  const fallback = "https://aboutsid.netlify.app/avatar.svg";
+  const sources = [
+    "./assets/images/avatar.png",
+    "./assets/images/avatar.jpg",
+    "https://api.dicebear.com/7.x/bottts/png?seed=Sid&size=512&backgroundType=gradient&backgroundColor=6cf9ff,8a6cff"
+  ];
 
   const buildMesh = (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -375,11 +378,16 @@ function buildHologramAvatar() {
     scene.add(holoAvatar);
   };
 
-  texLoader.load(primary, (tex) => {
-    buildMesh(tex);
-  }, undefined, () => {
-    texLoader.load(fallback, (tex) => buildMesh(tex));
-  });
+  // Try local PNG, then local JPG, then DiceBear
+  const tryLoad = (i = 0) => {
+    if (i >= sources.length) return;
+    texLoader.load(sources[i], (tex) => {
+      buildMesh(tex);
+    }, undefined, () => {
+      tryLoad(i + 1);
+    });
+  };
+  tryLoad(0);
 }
 
 // Glow rings around the centerpiece
