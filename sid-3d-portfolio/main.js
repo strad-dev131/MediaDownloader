@@ -168,7 +168,6 @@ function createVideoBackground() {
     const video = document.getElementById("bgVideo");
     if (!video) return;
 
-    const localSrc = "./assets/video/background.mp4";
     const fallbackSrc = "https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4";
 
     // ensure playback on mobile
@@ -177,35 +176,32 @@ function createVideoBackground() {
     video.autoplay = true;
     video.playsInline = true;
 
-    // Prefer local upload (overrides <source> selection if needed)
-    video.src = localSrc;
-
     const tryPlay = () => {
       if (video.paused) {
         video.play().catch(() => {});
       }
     };
 
-    const useFallback = () => {
-      // switch to CDN fallback if local fails
-      if (!video.currentSrc || !video.currentSrc.includes(fallbackSrc)) {
-        video.crossOrigin = "anonymous";
-        video.src = fallbackSrc;
-        tryPlay();
-      }
-    };
-
-    video.addEventListener("error", useFallback);
-    video.addEventListener("stalled", useFallback);
-    video.addEventListener("emptied", useFallback);
+    // Attempt immediate playback and on user interaction/visibility changes
+    tryPlay();
     document.addEventListener("pointerdown", tryPlay);
     document.addEventListener("touchstart", tryPlay, { passive: true });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) tryPlay(); });
 
+    // Timeout fallback: if the chosen source doesn't become ready, switch to CDN
+    const fallbackTimer = setTimeout(() => {
+      if (video.readyState < 2) {
+        video.crossOrigin = "anonymous";
+        video.src = fallbackSrc;
+        tryPlay();
+      }
+    }, 3000);
+
     const setupTexture = () => {
-      // build texture only once video can play
       if (bgVideoTexture) return;
+      clearTimeout(fallbackTimer);
       tryPlay();
+
       bgVideoTexture = new THREE.VideoTexture(video);
       bgVideoTexture.colorSpace = THREE.SRGBColorSpace;
       bgVideoTexture.minFilter = THREE.LinearFilter;
@@ -220,15 +216,25 @@ function createVideoBackground() {
       onResize(); // fit to viewport
     };
 
-    // if already ready, setup immediately; otherwise wait for canplay
     if (video.readyState >= 2) {
       setupTexture();
     } else {
       video.addEventListener("canplay", setupTexture, { once: true });
       video.addEventListener("loadeddata", setupTexture, { once: true });
+      video.addEventListener("loadedmetadata", setupTexture, { once: true });
+      // also catch error/stall and switch to fallback then set up texture
+      const useFallbackAndSetup = () => {
+        clearTimeout(fallbackTimer);
+        video.crossOrigin = "anonymous";
+        video.src = fallbackSrc;
+        video.addEventListener("canplay", setupTexture, { once: true });
+        tryPlay();
+      };
+      video.addEventListener("error", useFallbackAndSetup, { once: true });
+      video.addEventListener("stalled", useFallbackAndSetup, { once: true });
+      video.addEventListener("emptied", useFallbackAndSetup, { once: true });
     }
   } catch (e) {
-    // if video fails, we simply rely on the starfields and HTML video background
     bgVideoMesh = null;
   }
 }
