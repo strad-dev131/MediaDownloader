@@ -143,8 +143,28 @@ body.video-playing #overlay{
   cursor: pointer;
 }
 
-/* Alt theme accents */
-html}
+/* Alt theme */
+html[data-theme="alt"]{
+  --accent: #ffae6c;
+  --accent-2: #ff6cff;
+
+  /* Broader palette shift for clear theme change */
+  --text: #f6f7fb;
+  --muted: #c9c6d9;
+  --bg: #0b0a14;
+  --bg-2: #0f0d1a;
+  --card: rgba(255,255,255,0.07);
+  --glass: rgba(255,255,255,0.10);
+  --border: rgba(255,255,255,0.14);
+}
+
+/* Alt theme: tune video and overlay for contrast */
+html[data-theme="alt"] #bgVideo{
+  filter: saturate(1.12) contrast(1.02) brightness(0.60) hue-rotate(15deg);
+}
+html[data-theme="alt"] body.video-playing #overlay{
+  opacity: 0.40;
+}
 
 .hero{
   padding-top: 140px;
