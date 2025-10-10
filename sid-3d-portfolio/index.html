@@ -42,18 +42,31 @@
     <script>
       (function(){
         var v = document.getElementById('bgVideo');
-        var l = document.getElementById('loader');
-        // Global hide for use by main.js too
+
+        // Global hide for use by main.js too — always query loader at call time
+        function getLoader(){ return document.getElementById('loader'); }
         window.hideLoader = function(){
+          var l = getLoader();
           document.body.classList.add('video-playing');
           if (l){
             l.classList.add('loaded');
-            setTimeout(function(){ if (l && l.parentNode){ l.parentNode.removeChild(l); } }, 300);
+            setTimeout(function(){
+              var ll = getLoader();
+              if (ll && ll.parentNode){ ll.parentNode.removeChild(ll); }
+            }, 300);
           }
         };
+
+        // Set manual Enter button after DOM is ready
+        document.addEventListener('DOMContentLoaded', function(){
+          var btn = document.getElementById('loaderEnter');
+          if (btn) btn.addEventListener('click', window.hideLoader, { once: true });
+        }, { once: true });
+
         // Immediate watchdogs in case autoplay or JS events stall
         document.addEventListener('DOMContentLoaded', function(){ setTimeout(window.hideLoader, 600); }, { once: true });
-        window.addEventListener('load', function(){ setTimeout(window.hideLoader, 800); }, { once: true });
+        window.addEventListener('load', function(){ setTimeout(window.hideLoader, 900); }, { once: true });
+
         // Video autoplay attempt
         if (v){
           v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('webkit-playsinline','true');
@@ -65,14 +78,14 @@
           document.addEventListener('pointerdown', play, { once: true });
           document.addEventListener('touchstart', play, { passive: true, once: true });
           // quick fallback if video doesn't start
-          setTimeout(window.hideLoader, 700);
+          setTimeout(window.hideLoader, 800);
         } else {
           // no video element found; remove loader quickly
-          setTimeout(window.hideLoader, 500);
+          setTimeout(window.hideLoader, 700);
         }
-      // Manual enter handler to guarantee exit
-        var btn = document.getElementById('loaderEnter');
-        if (btn) btn.addEventListener('click', window.hideLoader, { once: true });
+
+        // Last-chance failsafe: ensure loader is gone after 2s
+        setTimeout(window.hideLoader, 2000);
       })();
     </script>
 
