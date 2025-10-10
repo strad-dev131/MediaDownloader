@@ -1,15 +1,15 @@
 // Year
 document.getElementById("year").textContent = new Date().getFullYear();
 
-// Smooth anchor scroll
+// Smooth anchor scroll (use scrollIntoView + CSS scroll-margin-top)
 document.querySelectorAll('a[href^="#"]').forEach(a => {
-  a.addEventListener("click", e => {
+  a.addEventListener("click", (e) => {
     const id = a.getAttribute("href");
-    const el = document.querySelector(id);
+    const el = id && document.querySelector(id);
     if (!el) return;
     e.preventDefault();
-    window.scrollTo({ top: el.offsetTop - 60, behavior: "smooth" });
-  });
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, { passive: false });
 });
 
 // Reveal sections on scroll
@@ -20,14 +20,20 @@ const io = new IntersectionObserver((entries) => {
 }, { threshold: 0.12 });
 document.querySelectorAll(".section").forEach(s => io.observe(s));
 
-// Theme toggle (light/dark accent)
+// Theme toggle (accent swap + html data-theme attribute)
 const themeToggle = document.getElementById("themeToggle");
 let isAlt = false;
-themeToggle.addEventListener("click", () => {
-  isAlt = !isAlt;
-  document.documentElement.style.setProperty("--accent", isAlt ? "#ffae6c" : "#6cf9ff");
-  document.documentElement.style.setProperty("--accent-2", isAlt ? "#ff6cff" : "#8a6cff");
-});
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => {
+    isAlt = !isAlt;
+    // set attribute for CSS overrides
+    if (isAlt) document.documentElement.setAttribute("data-theme", "alt");
+    else document.documentElement.removeAttribute("data-theme");
+    // also set inline vars for immediate update
+    document.documentElement.style.setProperty("--accent", isAlt ? "#ffae6c" : "#6cf9ff");
+    document.documentElement.style.setProperty("--accent-2", isAlt ? "#ff6cff" : "#8a6cff");
+  });
+}
 
 // THREE.JS SCENE
 let renderer, scene, camera, composer;
