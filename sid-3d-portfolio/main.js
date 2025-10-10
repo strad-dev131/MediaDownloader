@@ -38,11 +38,15 @@ const canvas = document.getElementById("scene");
 const dummy = new THREE.Object3D();
 const heroEl = document.querySelector(".hero-content");
 const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+let paused = false;
+document.addEventListener("visibilitychange", () => { paused = document.hidden; });
 
 function init() {
   // Renderer
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(1.75, window.devicePixelRatio)); // slightly lower for smoother start on mobile
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+  const isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+  const basePR = isMobileViewport ? 1.25 : Math.min(1.75, window.devicePixelRatio);
+  renderer.setPixelRatio(basePR);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   // Make canvas transparent so HTML video shows through
@@ -77,12 +81,14 @@ function init() {
   scene.add(knot);
 
   // Starfield - near layer
-  const nearCount = window.innerWidth < 640 ? 700 : 1400;
+  const isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+  const nearCount = isMobileViewport ? 600 : 1400;
   particlesNear = makeStarfield(nearCount, 3.2, 0x77ffff, 0.024);
   scene.add(particlesNear);
 
   // Starfield - far layer
-  const farCount = window.innerWidth < 640 ? 1200 : 2200;
+  const isMobileViewport2 = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+  const farCount = isMobileViewport2 ? 900 : 2000;
   particlesFar = makeStarfield(farCount, 8.0, 0x88bbff, 0.018);
   scene.add(particlesFar);
 
@@ -114,10 +120,11 @@ function init() {
   // Post-processing bloom
   try {
     const renderPass = new THREE.RenderPass(scene, camera);
+    const isMobileViewportBloom = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
     const unrealBloomPass = new THREE.UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      window.innerWidth < 640 ? 0.75 : 0.95,
-      0.65,
+      isMobileViewportBloom ? 0.6 : 0.9,
+      0.6,
       0.02
     );
     composer = new THREE.EffectComposer(renderer);
@@ -414,7 +421,7 @@ function createGlowRings() {
 
 // Instanced orbiting shapes for extra 3D motion
 function createOrbiters() {
-  const count = window.innerWidth < 640 ? 120 : 240;
+  const count = (window.matchMedia("(max-width: 640px)").matches || isTouchDevice) ? 100 : 220;
   const geo = new THREE.IcosahedronGeometry(0.05, 0);
   const mat = new THREE.MeshStandardMaterial({
     color: 0x9af0ff,
@@ -476,11 +483,14 @@ function pushTrail(x, y, z) {
 
 function animate() {
   requestAnimationFrame(animate);
+  if (paused) return;
   const t = clock.getElapsedTime();
 
   // centerpiece motion
-  knot.rotation.y = t * 0.25;
-  knot.rotation.x = Math.sin(t * 0.4) * 0.1;
+  const baseRotY = t * 0.25;
+  const baseRotX = Math.sin(t * 0.4) * 0.1;
+  knot.rotation.y = THREE.MathUtils.lerp(knot.rotation.y, baseRotY + (mouse.x || 0) * 0.18, 0.08);
+  knot.rotation.x = THREE.MathUtils.lerp(knot.rotation.x, baseRotX + (mouse.y || 0) * 0.12, 0.08);
   const s = 1 + Math.sin(t * 0.8) * 0.03;
   knot.scale.set(s, s, s);
 
@@ -537,8 +547,13 @@ function animate() {
     tagline3D.material.color.copy(c);
   }
 
-  // pointer glow breathing
-  if (pointerGlow) pointerGlow.scale.setScalar(1 + Math.sin(t * 2.0) * 0.08);
+  // pointer glow breathing + smooth follow
+  if (pointerGlow) {
+    pointerGlow.scale.setScalar(1 + Math.sin(t * 2.0) * 0.06);
+    if (typeof mouseWorld !== "undefined") {
+      pointerGlow.position.lerp(mouseWorld, 0.12);
+    }
+  }
 
   // hologram shader time
   if (holoAvatar && holoAvatar.material && holoAvatar.material.uniforms) {
@@ -559,6 +574,9 @@ function onResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+  // adjust pixel ratio on resize for crispness and performance
+  const pr = (window.innerWidth < 640 || isTouchDevice) ? 1.25 : Math.min(1.75, window.devicePixelRatio);
+  renderer.setPixelRatio(pr);
 
   // fit bg video plane to viewport aspect
   if (bgVideoMesh) {
@@ -580,34 +598,19 @@ function onResize() {
 }
 window.addEventListener("resize", onResize);
 
-// Parallax based on scroll
-let lastScroll = window.scrollY;
+// Parallax based on scroll (smoothed in animation loop)
+let scrollTargetY = window.scrollY;
 window.addEventListener("scroll", () => {
-  const y = window.scrollY;
-  lastScroll = y;
-  camera.position.y = 0.6 + Math.min(0.7, y * 0.0006);
-  camera.position.z = 3.2 + Math.min(1.2, y * 0.0008);
+  scrollTargetY = window.scrollY;
+}, { passive: true });
 
-  // subtle bg video parallax
-  if (bgVideoMesh) {
-    bgVideoMesh.position.z = -5 - Math.min(1.0, y * 0.0006);
-  }
-});
-
-// Mouse interaction
+// Mouse interaction (smooth, no heavy timelines)
 const mouse = new THREE.Vector2();
+const mouseWorld = new THREE.Vector3();
 window.addEventListener("mousemove", (e) => {
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-  gsap.to(knot.rotation, { x: mouse.y * 0.2, y: mouse.x * 0.3, duration: 0.6, ease: "power2.out" });
-
-  // pointer glow follows the cursor with slight depth and ripple
-  const xWorld = mouse.x * 0.8;
-  const yWorld = 0.8 + mouse.y * 0.4;
-  gsap.to(pointerGlow.position, { x: xWorld, y: yWorld, z: 1.4, duration: 0.4, ease: "power2.out" });
-  if (pointerGlow) {
-    gsap.fromTo(pointerGlow.scale, { x: 1, y: 1, z: 1 }, { x: 1.2, y: 1.2, z: 1.2, duration: 0.2, yoyo: true, repeat: 1, ease: "power2.out" });
-  }
+  mouseWorld.set(mouse.x * 0.8, 0.8 + mouse.y * 0.4, 1.4);
 
   // hero tilt based on cursor (desktop only)
   if (heroEl && !isTouchDevice) {
@@ -617,8 +620,8 @@ window.addEventListener("mousemove", (e) => {
   }
 
   // leave a particle trail
-  pushTrail(xWorld, yWorld, 1.4);
-});
+  pushTrail(mouseWorld.x, mouseWorld.y, mouseWorld.z);
+}, { passive: true });
 window.addEventListener("mouseleave", () => {
   if (heroEl) heroEl.style.transform = "none";
 });
