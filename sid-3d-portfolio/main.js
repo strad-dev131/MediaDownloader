@@ -176,6 +176,9 @@ function createVideoBackground() {
     video.autoplay = true;
     video.playsInline = true;
 
+    // ensure sources are parsed and loading starts
+    if (video.load) video.load();
+
     const tryPlay = () => {
       if (video.paused) {
         video.play().catch(() => {});
@@ -193,6 +196,7 @@ function createVideoBackground() {
       if (video.readyState < 2) {
         video.crossOrigin = "anonymous";
         video.src = fallbackSrc;
+        if (video.load) video.load();
         tryPlay();
       }
     }, 3000);
@@ -220,6 +224,8 @@ function createVideoBackground() {
       setupTexture();
     } else {
       video.addEventListener("canplay", setupTexture, { once: true });
+      video.addEventListener("canplaythrough", setupTexture, { once: true });
+      video.addEventListener("playing", setupTexture, { once: true });
       video.addEventListener("loadeddata", setupTexture, { once: true });
       video.addEventListener("loadedmetadata", setupTexture, { once: true });
       // also catch error/stall and switch to fallback then set up texture
@@ -227,6 +233,7 @@ function createVideoBackground() {
         clearTimeout(fallbackTimer);
         video.crossOrigin = "anonymous";
         video.src = fallbackSrc;
+        if (video.load) video.load();
         video.addEventListener("canplay", setupTexture, { once: true });
         tryPlay();
       };
