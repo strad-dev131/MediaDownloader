@@ -15,8 +15,6 @@ document.querySelectorAll('.site-header nav a[href^="#"]').forEach(a => {
     window.scrollTo({ top: targetY, behavior: "smooth" });
   }, { passive: false });
 });
-  }, { passive: false });
-});
 
 // Reveal sections on scroll
 const io = new IntersectionObserver((entries) => {
