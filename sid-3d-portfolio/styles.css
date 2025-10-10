@@ -73,6 +73,11 @@ body.video-playing #overlay{
   box-shadow: 0 0 24px rgba(108,249,255,0.35);
 }
 .loader-text{ color: var(--muted); margin-top: 6px; letter-spacing: 0.5px; }
+.loader-enter{
+  margin-top: 10px;
+  border: none;
+  cursor: pointer;
+}
 
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce){
