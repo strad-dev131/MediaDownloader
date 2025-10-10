@@ -97,23 +97,27 @@ if (themeToggle) {
   });
 }
 
-// Music controls: play/pause background track uploaded to assets/music/music.mp3
+// Music controls: simple ON/OFF toggle for background track at assets/music/music.mp3
 var musicBtn = document.getElementById("musicToggle");
 var musicEl = document.getElementById("bgMusic");
 
 function updateMusicUI() {
   if (!musicBtn) return;
-  var label = (musicEl && !musicEl.paused) ? "Pause Music" : "Play Music";
-  musicBtn.textContent = label;
+  var isOn = (musicEl && !musicEl.paused);
+  musicBtn.textContent = isOn ? "Music On" : "Music Off";
 }
 
 function initMusic() {
   if (!musicEl) { updateMusicUI(); return; }
   musicEl.loop = true;
   musicEl.volume = 0.6;
+  try { musicEl.load(); } catch (_) {}
+
   // update UI on state changes
   musicEl.addEventListener("playing", updateMusicUI);
   musicEl.addEventListener("pause", updateMusicUI);
+  musicEl.addEventListener("canplay", updateMusicUI);
+  musicEl.addEventListener("ended", updateMusicUI);
 
   if (musicBtn) {
     musicBtn.addEventListener("click", function () {
@@ -126,6 +130,7 @@ function initMusic() {
       }
     });
   }
+
   updateMusicUI();
 }
 

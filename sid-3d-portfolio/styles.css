@@ -124,6 +124,11 @@ body.video-playing #overlay{
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
+.site-header .header-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px; /* theme sits close to music */
+}
 .site-header nav a{
   margin: 0 10px;
   color: var(--muted);
@@ -149,7 +154,6 @@ body.video-playing #overlay{
   color: var(--text);
   border-radius: 999px;
   padding: 6px 12px;
-  margin-left: 8px;
   cursor: pointer;
 }
 
