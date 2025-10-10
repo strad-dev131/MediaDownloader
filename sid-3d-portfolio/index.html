@@ -43,23 +43,33 @@
       (function(){
         var v = document.getElementById('bgVideo');
         var l = document.getElementById('loader');
+        // Global hide for use by main.js too
         window.hideLoader = function(){
           document.body.classList.add('video-playing');
           if (l){
             l.classList.add('loaded');
-            setTimeout(function(){ if (l && l.parentNode){ l.parentNode.removeChild(l); } }, 400);
+            setTimeout(function(){ if (l && l.parentNode){ l.parentNode.removeChild(l); } }, 300);
           }
         };
-        if (!v) { setTimeout(window.hideLoader, 800); return; }
-        v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('webkit-playsinline','true');
-        var play = function(){ try{ v.play().catch(function(){}); }catch(e, { once: true });
-        v.addEventListener('loadeddata', play, { once: true });
-        v.addEventListener('playing', hide, { once: true });
-        play();
-        document.addEventListener('pointerdown', play, { once: true });
-        document.addEventListener('touchstart', play, { passive: true, once: true });
-        // safety fallback to hide loader
-        setTimeout(hide, 1600);
+        // Immediate watchdogs in case autoplay or JS events stall
+        document.addEventListener('DOMContentLoaded', function(){ setTimeout(window.hideLoader, 600); }, { once: true });
+        window.addEventListener('load', function(){ setTimeout(window.hideLoader, 800); }, { once: true });
+        // Video autoplay attempt
+        if (v){
+          v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('webkit-playsinline','true');
+          var play = function(){ try{ v.play().catch(function(){}); }catch(e){} };
+          v.addEventListener('canplay', play, { once: true });
+          v.addEventListener('loadeddata', play, { once: true });
+          v.addEventListener('playing', window.hideLoader, { once: true });
+          play();
+          document.addEventListener('pointerdown', play, { once: true });
+          document.addEventListener('touchstart', play, { passive: true, once: true });
+          // quick fallback if video doesn't start
+          setTimeout(window.hideLoader, 700);
+        } else {
+          // no video element found; remove loader quickly
+          setTimeout(window.hideLoader, 500);
+        }
       })();
     </script>
 
@@ -345,6 +355,6 @@
       <p>© <span id="year"></span> Siddhartha Abhimanyu — Built with Three.js</p>
     </footer>
 
-    <script defer src="./main.js?v=12"></script>
+    <script defer src="./main.js?v=13"></script>
   </body>
 </html>
