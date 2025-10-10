@@ -42,7 +42,7 @@ const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 function init() {
   // Renderer
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+  renderer.setPixelRatio(Math.min(1.75, window.devicePixelRatio)); // slightly lower for smoother start on mobile
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   // Make canvas transparent so HTML video shows through
