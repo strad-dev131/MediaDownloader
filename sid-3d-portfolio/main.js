@@ -97,6 +97,40 @@ if (themeToggle) {
   });
 }
 
+// Music controls: play/pause background track uploaded to assets/music/music.mp3
+var musicBtn = document.getElementById("musicToggle");
+var musicEl = document.getElementById("bgMusic");
+
+function updateMusicUI() {
+  if (!musicBtn) return;
+  var label = (musicEl && !musicEl.paused) ? "Pause Music" : "Play Music";
+  musicBtn.textContent = label;
+}
+
+function initMusic() {
+  if (!musicEl) { updateMusicUI(); return; }
+  musicEl.loop = true;
+  musicEl.volume = 0.6;
+  // update UI on state changes
+  musicEl.addEventListener("playing", updateMusicUI);
+  musicEl.addEventListener("pause", updateMusicUI);
+
+  if (musicBtn) {
+    musicBtn.addEventListener("click", function () {
+      if (musicEl.paused) {
+        var p = musicEl.play();
+        if (p && typeof p.then === "function") p.then(updateMusicUI).catch(function(){});
+      } else {
+        musicEl.pause();
+        updateMusicUI();
+      }
+    });
+  }
+  updateMusicUI();
+}
+
+initMusic();
+
 // THREE.JS SCENE
 var renderer, scene, camera, composer;
 var knot, particlesNear, particlesFar, title3D, tagline3D, pointerGlow, pointerTrail, holoAvatar, orbitersInst, orbitersData, rings, clock;

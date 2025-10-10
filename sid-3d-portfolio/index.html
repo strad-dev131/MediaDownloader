@@ -48,6 +48,9 @@
       <!-- Fallback: cyber grid -->
       <source src="https://cdn.pixabay.com/video/2022/08/25/129193-748610003_large.mp4" type="video/mp4" />
     </video>
+    <audio id="bgMusic" preload="auto" loop>
+      <source src="./assets/music/music.mp3?v=1" type="audio/mpeg" />
+    </audio>
     <script>
       (function(){
         var v = document.getElementById('bgVideo');
@@ -125,6 +128,7 @@
         <a href="#contact">Contact</a>
       </nav>
       <button id="themeToggle" aria-label="Toggle theme">Theme</button>
+      <button id="musicToggle" aria-label="Play or pause background music">Play Music</button>
     </header>
 
     <main>
@@ -409,6 +413,6 @@
       <p>© <span id="year"></span> Siddhartha Abhimanyu — Built with Three.js</p>
     </footer>
 
-    <script defer src="./main.js?v=17"></script>
+    <script defer src="./main.js?v=18"></script>
   </body>
 </html>

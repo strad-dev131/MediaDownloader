@@ -143,6 +143,15 @@ body.video-playing #overlay{
   padding: 6px 12px;
   cursor: pointer;
 }
+#musicToggle{
+  border: 1px solid var(--border);
+  background: var(--glass);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  margin-left: 8px;
+  cursor: pointer;
+}
 
 /* Alt theme */
 html[data-theme="alt"]{
