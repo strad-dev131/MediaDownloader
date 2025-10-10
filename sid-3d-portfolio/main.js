@@ -1,19 +1,30 @@
 // Year
-document.getElementById("year").textContent = new Date().getFullYear();>
-// Anchor navigation: use scrollIntoView so CSS scroll-margin-top applies reliably
-document.querySelectorAll('.site-header nav a[href^="#"]').forEach(a => {
-  a.addEventListener("click", (e) => {
-    const id = a.getAttribute("href");
-    const el = id && document.querySelector(id);
-    if (!el) return;
-    e.preventult();
-    const header = document.querySelector('.site-header');
-    const headerH = header ? header.offsetHeight : 64;
-    const rect = el.getBoundingClientRect();
-    const targetY = rect.top + window.pageYOffset - headerH - 8;
-    window.scrollTo({ top: targetY, behavior: "smooth" });
-  }, { passive: false });
-});
+// Year
+(function(){
+  var yEl = document.getElementById("year");
+  if (yEl) yEl.textContent = String(new Date().getFullYear());
+})();
+// Anchor navigation: smooth scroll and respect section scroll-margin-top
+(function(){
+  var links = document.querySelectorAll('.site-header nav a[href^="#"]');
+  links.forEach(function(a){
+    a.addEventListener("click", function(e){
+      var id = a.getAttribute("href");
+      var el = id && document.querySelector(id);
+      if (!el) return;
+      e.preventDefault();
+      if (el.scrollIntoView) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        var header = document.querySelector(".site-header");
+        var headerH = header ? header.offsetHeight : 64;
+        var rect = el.getBoundingClientRect();
+        var targetY = rect.top + window.pageYOffset - headerH - 8;
+        window.scrollTo({ top: targetY, behavior: "smooth" });
+      }
+    }, { passive: false });
+  });
+})();
 
 // Reveal sections on scroll
 const io = new IntersectionObserver((entries) => {
@@ -23,18 +34,38 @@ const io = new IntersectionObserver((entries) => {
 }, { threshold: 0.12 });
 document.querySelectorAll(".section").forEach(s => io.observe(s));
 
-// Theme toggle (accent swap + html data-theme attribute)
+// Theme toggle with persistence and full palette switch via data-theme
 const themeToggle = document.getElementById("themeToggle");
-let isAlt = false;
+
+function applyTheme(theme) {
+  const isAltTheme = theme === "alt";
+  if (isAltTheme) {
+    document.documentElement.setAttribute("data-theme", "alt");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+  // update accent inline for immediate feedback (CSS handles the rest via variables)
+  document.documentElement.style.setProperty("--accent", isAltTheme ? "#ffae6c" : "#6cf9ff");
+  document.documentElement.style.setProperty("--accent-2", isAltTheme ? "#ff6cff" : "#8a6cff");
+  // update button label for clarity
+  if (themeToggle) themeToggle.textContent = isAltTheme ? "Theme: Alt" : "Theme";
+}
+
+// Initialize theme from localStorage
+try {
+  const stored = localStorage.getItem("theme");
+  applyTheme(stored === "alt" ? "alt" : "default");
+} catch (_) {
+  applyTheme("default");
+}
+
+// Toggle and persist
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
-    isAlt = !isAlt;
-    // set attribute for CSS overrides
-    if (isAlt) document.documentElement.setAttribute("data-theme", "alt");
-    else document.documentElement.removeAttribute("data-theme");
-    // also set inline vars for immediate update
-    document.documentElement.style.setProperty("--accent", isAlt ? "#ffae6c" : "#6cf9ff");
-    document.documentElement.style.setProperty("--accent-2", isAlt ? "#ff6cff" : "#8a6cff");
+    const isAltNow = document.documentElement.getAttribute("data-theme") === "alt";
+    const next = isAltNow ? "default" : "alt";
+    applyTheme(next);
+    try { localStorage.setItem("theme", next); } catch (_) {}
   });
 }
 
@@ -620,7 +651,7 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   if (composer) composer.setSize(window.innerWidth, window.innerHeight);
   // adjust pixel ratio on resize for crispness and performance
-  const pr = (window.innerWidt << 640 || isTouchDevice) ? 1.0 : Math.min(1.5, windowow.devicePixelRatio);
+  var pr = (window.innerWidth < 640 || isTouchDevice) ? 1.0 : Math.min(1.5, window.devicePixelRatio);
   renderer.setPixelRatio(pr);
 
   // fit bg video plane to viewport aspect
