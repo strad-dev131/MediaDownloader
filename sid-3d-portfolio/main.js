@@ -168,6 +168,7 @@ function createVideoBackground() {
     const video = document.getElementById("bgVideo");
     if (!video) return;
 
+    const localSrc = "./assets/video/background.mp4?v=" + Date.now(); // cache-bust local
     const fallbackSrc = "https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4";
 
     // ensure playback on mobile
@@ -176,7 +177,8 @@ function createVideoBackground() {
     video.autoplay = true;
     video.playsInline = true;
 
-    // ensure sources are parsed and loading starts
+    // explicitly prefer local upload and start loading
+    video.src = localSrc;
     if (video.load) video.load();
 
     const tryPlay = () => {
@@ -191,7 +193,7 @@ function createVideoBackground() {
     document.addEventListener("touchstart", tryPlay, { passive: true });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) tryPlay(); });
 
-    // Timeout fallback: if the chosen source doesn't become ready, switch to CDN
+    // Timeout fallback: if the local source doesn't become ready, switch to CDN
     const fallbackTimer = setTimeout(() => {
       if (video.readyState < 2) {
         video.crossOrigin = "anonymous";
@@ -199,7 +201,7 @@ function createVideoBackground() {
         if (video.load) video.load();
         tryPlay();
       }
-    }, 3000);
+    }, 1500);
 
     const setupTexture = () => {
       if (bgVideoTexture) return;
