@@ -8,7 +8,11 @@ document.querySelectorAll('.site-header nav a[href^="#"]').forEach(a => {
     const el = id && document.querySelector(id);
     if (!el) return;
     e.preventDefault();
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const header = document.querySelector('.site-header');
+    const headerH = header ? header.offsetHeight : 64;
+    const rect = el.getBoundingClientRect();
+    const targetY = rect.top + window.pageYOffset - headerH - 8;
+    window.scrollTo({ top: targetY, behavior: "smooth" });
   }, { passive: false });
 });
   }, { passive: false });
