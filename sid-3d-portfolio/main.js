@@ -583,14 +583,23 @@ function animate() {
     holoAvatar.material.uniforms.time.value = t;
   }
 
->
 // update background video texture if present
 if (bgVideoTexture) {
   bgVideoTexture.needsUpdate = true;
 }
 
 // smooth camera and bg video parallax based on scroll
-const camTy = 0.6 + Math.min(0. camera);
+const camTy = 0.6 + Math.min(0.7, scrollTargetY * 0.0006);
+const camTz = 3.2 + Math.min(1.2, scrollTargetY * 0.0008);
+camera.position.y = THREE.MathUtils.lerp(camera.position.y, camTy, 0.08);
+camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTz, 0.08);
+if (bgVideoMesh) {
+  const targetZ = -5 - Math.min(1.0, scrollTargetY * 0.0006);
+  bgVideoMesh.position.z = THREE.MathUtils.lerp(bgVideoMesh.position.z, targetZ, 0.08);
+}
+
+if (composer) composer.render();
+else renderer.render(scene, camera);
 }
 
 function onResize() {

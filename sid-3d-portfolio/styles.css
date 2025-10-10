@@ -45,6 +45,40 @@ body.video-playing #overlay{
   opacity: 0.45;
 }
 
+/* Loading screen */
+#loader{
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(120% 120% at 50% 20%, rgba(5,6,11,0.92) 0%, rgba(5,6,11,0.78) 40%, rgba(5,6,11,0.6) 100%);
+  backdrop-filter: blur(6px);
+  transition: opacity .45s ease, visibility .45s ease;
+}
+#loader.loaded{
+  opacity: 0;
+  visibility: hidden;
+}
+.loader-inner{ text-align: center; }
+.loader-brand{ align-items: center; justify-content: center; font-size: 18px; }
+.loader-spinner{
+  width: 64px; height: 64px; margin: 12px auto 10px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--accent);
+  border-left-color: var(--accent-2);
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 24px rgba(108,249,255,0.35);
+}
+.loader-text{ color: var(--muted); margin-top: 6px; letter-spacing: 0.5px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce){
+  .loader-spinner{ animation: none; }
+}
+
 /* WebGL canvas sits on top of video + overlay */
 #scene{
   position: fixed;

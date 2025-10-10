@@ -42,19 +42,39 @@
     <script>
       (function(){
         var v = document.getElementById('bgVideo');
+        var l = document.getElementById('loader');
         if (!v) return;
         v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('webkit-playsinline','true');
         var play = function(){ try{ v.play().catch(function(){}); }catch(e){} };
+        var hide = function(){
+          document.body.classList.add('video-playing');
+          if (l){
+            l.classList.add('loaded');
+            setTimeout(function(){ if (l && l.parentNode){ l.parentNode.removeChild(l); } }, 500);
+          }
+        };
         v.addEventListener('canplay', play, { once: true });
         v.addEventListener('loadeddata', play, { once: true });
-        v.addEventListener('playing', function(){ document.body.classList.add('video-playing'); }, { once: true });
+        v.addEventListener('playing', hide, { once: true });
         play();
         document.addEventListener('pointerdown', play, { once: true });
         document.addEventListener('touchstart', play, { passive: true, once: true });
+        // safety fallback to hide loader
+        setTimeout(hide, 1600);
       })();
     </script>
 
     <div id="overlay"></div>
+    <div id="loader" aria-live="polite">
+      <div class="loader-inner">
+        <div class="loader-spinner"></div>
+        <div class="brand loader-brand">
+          <span class="logo-dot"></span>
+          <span class="brand-name">SID</span>
+        </div>
+        <p class="loader-text">Loading experience...</p>
+      </div>
+    </div>
     <canvas id="scene"></canvas>
 
     <header class="site-header">
