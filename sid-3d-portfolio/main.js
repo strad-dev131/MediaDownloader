@@ -598,7 +598,8 @@ window.addEventListener("mousemove", (e) => {
 });
 window.addEventListener("mouseleave", () => {
   if (heroEl) heroEl.style.transform = "none";
-});>
+});
+
 // Card hover glow + 3D tilt effect
 document.querySelectorAll(".card").forEach(card => {
   const onMove = (e) => {
@@ -612,7 +613,19 @@ document.querySelectorAll(".card").forEach(card => {
     const nx = (x / rect.width) * 2 - 1;   // -1..1
     const ny = (y / rect.height) * 2 - 1;  // -1..1
     const rotY = nx * 6;   // left/right
-    const rotX = -ny * 
+    const rotX = -ny * 6;  // up/down
+    card.style.transform = `rotateY(${rotY}deg) rotateX(${rotX}deg)`;
+  };
+  card.addEventListener("mousemove", onMove);
+  card.addEventListener("mouseleave", () => {
+    card.style.transform = "none";
+  });
+});
+
+// Fallback: ensure sections are visible if IntersectionObserver does not trigger
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".section").forEach(s => s.classList.add("revealed"));
+});
 
 // Kick off
 init();
