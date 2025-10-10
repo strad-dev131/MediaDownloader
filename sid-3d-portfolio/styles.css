@@ -161,10 +161,13 @@ html[data-theme="alt"]{
 
 /* Alt theme: tune video and overlay for contrast */
 html[data-theme="alt"] #bgVideo{
-  filter: saturate(1.12) contrast(1.02) brightness(0.60) hue-rotate(15deg);
+  filter: saturate(1.18) contrast(1.06) brightness(0.58) hue-rotate(22deg);
+}
+html[data-theme="alt"] #overlay{
+  background: radial-gradient(120% 120% at 50% 20%, rgba(14,10,18,0.90) 0%, rgba(14,10,18,0.72) 40%, rgba(14,10,18,0.52) 100%);
 }
 html[data-theme="alt"] body.video-playing #overlay{
-  opacity: 0.40;
+  opacity: 0.38;
 }
 
 .hero{

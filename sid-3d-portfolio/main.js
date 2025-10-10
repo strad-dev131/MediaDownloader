@@ -1,13 +1,12 @@
 // Year
-document.getElementById("year").textContent = new Date().getFullYear();
-
-// Anchor navigation: ensure smooth scroll and correct offset for fixed header
+document.getElementById("year").textContent = new Date().getFullYear();>
+// Anchor navigation: use scrollIntoView so CSS scroll-margin-top applies reliably
 document.querySelectorAll('.site-header nav a[href^="#"]').forEach(a => {
   a.addEventListener("click", (e) => {
     const id = a.getAttribute("href");
     const el = id && document.querySelector(id);
     if (!el) return;
-    e.preventDefault();
+    e.preventult();
     const header = document.querySelector('.site-header');
     const headerH = header ? header.offsetHeight : 64;
     const rect = el.getBoundingClientRect();
@@ -621,7 +620,7 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   if (composer) composer.setSize(window.innerWidth, window.innerHeight);
   // adjust pixel ratio on resize for crispness and performance
-  const pr = (window.innerWidth < 640 || isTouchDevice) ? 1.25 : Math.min(1.75, window.devicePixelRatio);
+  const pr = (window.innerWidt << 640 || isTouchDevice) ? 1.0 : Math.min(1.5, windowow.devicePixelRatio);
   renderer.setPixelRatio(pr);
 
   // fit bg video plane to viewport aspect
