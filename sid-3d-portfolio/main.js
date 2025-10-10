@@ -1,14 +1,8 @@
 // Year
 document.getElementById("year").textContent = new Date().getFullYear();
 
-// Smooth anchor scroll (use scrollIntoView + CSS scroll-margin-top)
-document.querySelectorAll('a[href^="#"]').forEach(a => {
-  a.addEventListener("click", (e) => {
-    const id = a.getAttribute("href");
-    const el = id && document.querySelector(id);
-    if (!el) return;
-    e.preventDefault();
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+// Native anchor navigation — rely on CSS scroll-behavior and scroll-margin.
+// No JS interception to avoid conflicts with fixed header and ensure reliability.
   }, { passive: false });
 });
 
@@ -52,7 +46,7 @@ function init() {
   // Renderer
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
   const isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-  const basePR = isMobileViewport ? 1.25 : Math.min(1.75, window.devicePixelRatio);
+  const basePR = isMobileViewport ? 1.0 : Math.min(1.5, window.devicePixelRatio);
   renderer.setPixelRatio(basePR);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -89,14 +83,14 @@ scene.add(knot);
 
 // Starfield - near layer
 const isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-const nearCount = isMobileViewport ? 600 : 1400;
-particlesNear = makeStarfield(nearCount, 3.2, 0x77ffff, 0.024);
+const nearCount = isMobileViewport ? 300 : 900;
+particlesNear = makeStarfield(nearCount, 3.2, 0x77ffff, 0.022);
 scene.add(particlesNear);
 
 // Starfield - far layer
 const isMobileViewport2 = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-const farCount = isMobileViewport2 ? 900 : 2000;
-particlesFar = makeStarfield(farCount, 8.0, 0x88bbff, 0.018);
+const farCount = isMobileViewport2 ? 600 : 1400;
+particlesFar = makeStarfield(farCount, 8.0, 0x88bbff, 0.016);
 scene.add(particlesFar);
 
 // Pointer glow (small emissive sphere that follows cursor)
@@ -387,13 +381,13 @@ function createGlowRings() {
   rings = [];
   const colors = [0x6cf9ff, 0x8a6cff, 0x9af0ff];
   const radii = [0.95, 1.25, 1.6];
-  const thickness = [0.015, 0.012, 0.010];
+  const thickness = [0.014, 0.011, 0.009];
   for (let i = 0; i < radii.length; i++) {
-    const geo = new THREE.TorusGeometry(radii[i], thickness[i], 16, 100);
+    const geo = new THREE.TorusGeometry(radii[i], thickness[i], 16, 60); // fewer segments for performance
     const mat = new THREE.MeshBasicMaterial({
       color: colors[i],
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.5,
       blending: THREE.AdditiveBlending
     });
     const ring = new THREE.Mesh(geo, mat);
@@ -406,7 +400,7 @@ function createGlowRings() {
 
 // Instanced orbiting shapes for extra 3D motion
 function createOrbiters() {
-  const count = (window.matchMedia("(max-width: 640px)").matches || isTouchDevice) ? 100 : 220;
+  const count = (window.matchMedia("(max-width: 640px)").matches || isTouchDevice) ? 70 : 160;
   const geo = new THREE.IcosahedronGeometry(0.05, 0);
   const mat = new THREE.MeshStandardMaterial({
     color: 0x9af0ff,
@@ -436,13 +430,13 @@ function createOrbiters() {
 
 // Pointer trail particles
 function createPointerTrail() {
-  trailMax = window.innerWidth < 640 ? 48 : 80;
+  trailMax = window.innerWidth < 640 ? 36 : 70;
   trailPositions = new Float32Array(trailMax * 3);
   trailGeom = new THREE.BufferGeometry();
   trailGeom.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
   const mat = new THREE.PointsMaterial({
     color: 0x88eaff,
-    size: 0.035,
+    size: 0.025,
     transparent: true,
     opacity: 0.85,
     depthWrite: false,
@@ -469,12 +463,14 @@ function pushTrail(x, y, z) {
 // Schedule bloom post-processing after initial paint for faster load
 function schedulePostProcessing() {
   const cb = () => {
+    // Skip bloom on low-power devices or small screens
+    const lowPower = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+    if (lowPower) { composer = null; return; }
     try {
       const renderPass = new THREE.RenderPass(scene, camera);
-      const isMobileViewportBloom = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
       const unrealBloomPass = new THREE.UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
-        isMobileViewportBloom ? 0.6 : 0.9,
+        0.8,
         0.6,
         0.02
       );
@@ -508,6 +504,7 @@ function animate() {
   requestAnimationFrame(animate);
   if (paused) return;
   const t = clock.getElapsedTime();
+  frameCounter++;
 
   // centerpiece motion
   const baseRotY = t * 0.25;
@@ -517,8 +514,8 @@ function animate() {
   const s = 1 + Math.sin(t * 0.8) * 0.03;
   knot.scale.set(s, s, s);
 
-  // glow rings animate
-  if (rings && rings.length) {
+  // glow rings animate (every other frame for performance)
+  if (rings && rings.length && (frameCounter % 2 === 0)) {
     rings.forEach((ring, i) => {
       ring.rotation.y = t * (0.12 + i * 0.08);
       ring.rotation.z = Math.sin(t * (0.25 + i * 0.14)) * 0.25;
@@ -526,8 +523,8 @@ function animate() {
     });
   }
 
-  // orbiters motion
-  if (orbitersInst && orbitersData) {
+  // orbiters motion (every other frame)
+  if (orbitersInst && orbitersData && (frameCounter % 2 === 0)) {
     for (let i = 0; i < orbitersData.length; i++) {
       const d = orbitersData[i];
       const ang = d.angle + t * d.speed;
@@ -549,11 +546,11 @@ function animate() {
 
   // starfields drift parallax
   if (particlesNear) {
-    particlesNear.rotation.y = t * 0.015;
-    particlesNear.rotation.x = Math.sin(t * 0.04) * 0.015;
+    particlesNear.rotation.y = t * 0.012;
+    particlesNear.rotation.x = Math.sin(t * 0.04) * 0.012;
   }
   if (particlesFar) {
-    particlesFar.rotation.y = -t * 0.008;
+    particlesFar.rotation.y = -t * 0.007;
   }
 
   // title shimmer
@@ -583,29 +580,29 @@ function animate() {
     holoAvatar.material.uniforms.time.value = t;
   }
 
-// update background video texture if present
-if (bgVideoTexture) {
-  bgVideoTexture.needsUpdate = true;
-}
+  // update background video texture if present (every other frame)
+  if (bgVideoTexture && (frameCounter % 2 === 0)) {
+    bgVideoTexture.needsUpdate = true;
+  }
 
-// smooth camera and bg video parallax based on scroll
-const camTy = 0.6 + Math.min(0.7, scrollTargetY * 0.0006);
-const camTz = 3.2 + Math.min(1.2, scrollTargetY * 0.0008);
-camera.position.y = THREE.MathUtils.lerp(camera.position.y, camTy, 0.08);
-camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTz, 0.08);
-if (bgVideoMesh) {
-  const targetZ = -5 - Math.min(1.0, scrollTargetY * 0.0006);
-  bgVideoMesh.position.z = THREE.MathUtils.lerp(bgVideoMesh.position.z, targetZ, 0.08);
-}
+  // smooth camera and bg video parallax based on scroll
+  const camTy = 0.6 + Math.min(0.7, scrollTargetY * 0.0006);
+  const camTz = 3.2 + Math.min(1.2, scrollTargetY * 0.0008);
+  camera.position.y = THREE.MathUtils.lerp(camera.position.y, camTy, 0.08);
+  camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTz, 0.08);
+  if (bgVideoMesh) {
+    const targetZ = -5 - Math.min(1.0, scrollTargetY * 0.0006);
+    bgVideoMesh.position.z = THREE.MathUtils.lerp(bgVideoMesh.position.z, targetZ, 0.08);
+  }
 
-if (composer) composer.render();
-else renderer.render(scene, camera);
+  if (composer) composer.render();
+  else renderer.render(scene, camera);
 
-// hide loader after first frame rendered
-if (!firstRenderDone) {
-  firstRenderDone = true;
-  if (window.hideLoader) window.hideLoader();
-}
+  // hide loader after first frame rendered
+  if (!firstRenderDone) {
+    firstRenderDone = true;
+    if (window.hideLoader) window.hideLoader();
+  }
 }
 
 function onResize() {

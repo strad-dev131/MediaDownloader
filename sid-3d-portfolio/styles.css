@@ -150,6 +150,21 @@ html}
   padding-top: 140px;
   text-align: center;
 }
+.hero .hero-content{
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+.hero h1{
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+.subtitle{
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
 .hero .avatar{
   width: 128px; height: 128px; border-radius: 50%;
   background: transparent;
