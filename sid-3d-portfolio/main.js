@@ -39,6 +39,7 @@ const dummy = new THREE.Object3D();
 const heroEl = document.querySelector(".hero-content");
 const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 let paused = false;
+let firstRenderDone = false;
 document.addEventListener("visibilitychange", () => { paused = document.hidden; });
 
 function init() {
@@ -59,89 +60,67 @@ function init() {
   camera.position.set(0, 0.6, 3.2);
 
   // Background 3D video plane (behind everything)
-  createVideoBackground();
+createVideoBackground();
 
-  // Lights
-  const hemi = new THREE.HemisphereLight(0x88ccff, 0x223344, 0.7);
-  const dir = new THREE.DirectionalLight(0xaaccff, 0.9);
-  dir.position.set(2.5, 3, 2.5);
-  scene.add(hemi, dir);
+// Lights
+const hemi = new THREE.HemisphereLight(0x88ccff, 0x223344, 0.7);
+const dir = new THREE.DirectionalLight(0xaaccff, 0.9);
+dir.position.set(2.5, 3, 2.5);
+scene.add(hemi, dir);
 
-  // Torus Knot (hero centerpiece)
-  const geo = new THREE.TorusKnotGeometry(0.62, 0.18, 320, 32, 2, 3);
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0x77ddff,
-    metalness: 0.75,
-    roughness: 0.22,
-    emissive: 0x112233,
-    envMapIntensity: 1.0
-  });
-  knot = new THREE.Mesh(geo, mat);
-  knot.position.set(0, 0.5, 0);
-  scene.add(knot);
+// Torus Knot (hero centerpiece)
+const geo = new THREE.TorusKnotGeometry(0.62, 0.18, 320, 32, 2, 3);
+const mat = new THREE.MeshStandardMaterial({
+  color: 0x77ddff,
+  metalness: 0.75,
+  roughness: 0.22,
+  emissive: 0x112233,
+  envMapIntensity: 1.0
+});
+knot = new THREE.Mesh(geo, mat);
+knot.position.set(0, 0.5, 0);
+scene.add(knot);
 
-  // Starfield - near layer
-  const isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-  const nearCount = isMobileViewport ? 600 : 1400;
-  particlesNear = makeStarfield(nearCount, 3.2, 0x77ffff, 0.024);
-  scene.add(particlesNear);
+// Starfield - near layer
+const isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+const nearCount = isMobileViewport ? 600 : 1400;
+particlesNear = makeStarfield(nearCount, 3.2, 0x77ffff, 0.024);
+scene.add(particlesNear);
 
-  // Starfield - far layer
-  const isMobileViewport2 = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-  const farCount = isMobileViewport2 ? 900 : 2000;
-  particlesFar = makeStarfield(farCount, 8.0, 0x88bbff, 0.018);
-  scene.add(particlesFar);
+// Starfield - far layer
+const isMobileViewport2 = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+const farCount = isMobileViewport2 ? 900 : 2000;
+particlesFar = makeStarfield(farCount, 8.0, 0x88bbff, 0.018);
+scene.add(particlesFar);
 
-  // 3D Title and Tagline
-  buildTitle3D();
-  buildTagline3D();
+// Pointer glow (small emissive sphere that follows cursor)
+const glowGeo = new THREE.SphereGeometry(0.06, 24, 24);
+const glowMat = new THREE.MeshStandardMaterial({
+  color: 0xff66ff,
+  emissive: 0xff33aa,
+  emissiveIntensity: 1.5,
+  metalness: 0.2,
+  roughness: 0.4
+});
+pointerGlow = new THREE.Mesh(glowGeo, glowMat);
+pointerGlow.position.set(0, 0.8, 1.4);
+scene.add(pointerGlow);
 
-  // Holographic avatar plane
-  buildHologramAvatar();
+// 3D extras scheduled to keep first frame fast
+createGlowRings();
+scheduleHeavy();
 
-  // Pointer glow (small emissive sphere that follows cursor)
-  const glowGeo = new THREE.SphereGeometry(0.06, 24, 24);
-  const glowMat = new THREE.MeshStandardMaterial({
-    color: 0xff66ff,
-    emissive: 0xff33aa,
-    emissiveIntensity: 1.5,
-    metalness: 0.2,
-    roughness: 0.4
-  });
-  pointerGlow = new THREE.Mesh(glowGeo, glowMat);
-  pointerGlow.position.set(0, 0.8, 1.4);
-  scene.add(pointerGlow);
+// Post-processing bloom (scheduled after initial frame for faster first paint)
+schedulePostProcessing();
 
-  // Extra 3D elements
-  createGlowRings();
-  createOrbiters();
-  createPointerTrail();
+// Subtle entrance animation
+gsap.from(".hero .avatar", { y: 20, opacity: 0, duration: 0.8, ease: "power2.out" });
+gsap.from(".hero h1", { y: 20, opacity: 0, duration: 0.9, delay: 0.1, ease: "power2.out" });
+gsap.from(".hero .subtitle", { y: 20, opacity: 0, duration: 0.9, delay: 0.2, ease: "power2.out" });
+gsap.from(".hero .cta", { y: 20, opacity: 0, duration: 0.9, delay: 0.3, ease: "power2.out" });
 
-  // Post-processing bloom
-  try {
-    const renderPass = new THREE.RenderPass(scene, camera);
-    const isMobileViewportBloom = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-    const unrealBloomPass = new THREE.UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      isMobileViewportBloom ? 0.6 : 0.9,
-      0.6,
-      0.02
-    );
-    composer = new THREE.EffectComposer(renderer);
-    composer.addPass(renderPass);
-    composer.addPass(unrealBloomPass);
-  } catch (e) {
-    composer = null;
-  }
-
-  // Subtle entrance animation
-  gsap.from(".hero .avatar", { y: 20, opacity: 0, duration: 0.8, ease: "power2.out" });
-  gsap.from(".hero h1", { y: 20, opacity: 0, duration: 0.9, delay: 0.1, ease: "power2.out" });
-  gsap.from(".hero .subtitle", { y: 20, opacity: 0, duration: 0.9, delay: 0.2, ease: "power2.out" });
-  gsap.from(".hero .cta", { y: 20, opacity: 0, duration: 0.9, delay: 0.3, ease: "power2.out" });
-
-  clock = new THREE.Clock();
-  animate();
+clock = new THREE.Clock();
+animate();
 }
 
 function makeStarfield(count, radius, color, size) {
@@ -208,7 +187,7 @@ function createVideoBackground() {
         if (video.load) video.load();
         tryPlay();
       }
-    }, 1200);
+    }, 600);
 
     const setupTexture = () => {
       if (bgVideoTexture) return;
@@ -504,6 +483,21 @@ function schedulePostProcessing() {
   else setTimeout(cb, 250);
 }
 
+// Schedule heavier assets after first paint to keep startup snappy
+function scheduleHeavy() {
+  const exec = () => {
+    try {
+      buildTitle3D();
+      buildTagline3D();
+      buildHologramAvatar();
+      createOrbiters();
+      createPointerTrail();
+    } catch (_) {}
+  };
+  if ("requestIdleCallback" in window) requestIdleCallback(exec, { timeout: 700 });
+  else setTimeout(exec, 100);
+}
+
 function animate() {
   requestAnimationFrame(animate);
   if (paused) return;
@@ -600,6 +594,12 @@ if (bgVideoMesh) {
 
 if (composer) composer.render();
 else renderer.render(scene, camera);
+
+// hide loader after first frame rendered
+if (!firstRenderDone) {
+  firstRenderDone = true;
+  if (window.hideLoader) window.hideLoader();
+}
 }
 
 function onResize() {

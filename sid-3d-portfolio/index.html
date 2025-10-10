@@ -43,17 +43,16 @@
       (function(){
         var v = document.getElementById('bgVideo');
         var l = document.getElementById('loader');
-        if (!v) return;
-        v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('webkit-playsinline','true');
-        var play = function(){ try{ v.play().catch(function(){}); }catch(e){} };
-        var hide = function(){
+        window.hideLoader = function(){
           document.body.classList.add('video-playing');
           if (l){
             l.classList.add('loaded');
-            setTimeout(function(){ if (l && l.parentNode){ l.parentNode.removeChild(l); } }, 500);
+            setTimeout(function(){ if (l && l.parentNode){ l.parentNode.removeChild(l); } }, 400);
           }
         };
-        v.addEventListener('canplay', play, { once: true });
+        if (!v) { setTimeout(window.hideLoader, 800); return; }
+        v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('webkit-playsinline','true');
+        var play = function(){ try{ v.play().catch(function(){}); }catch(e, { once: true });
         v.addEventListener('loadeddata', play, { once: true });
         v.addEventListener('playing', hide, { once: true });
         play();
@@ -346,6 +345,6 @@
       <p>© <span id="year"></span> Siddhartha Abhimanyu — Built with Three.js</p>
     </footer>
 
-    <script defer src="./main.js?v=11"></script>
+    <script defer src="./main.js?v=12"></script>
   </body>
 </html>
