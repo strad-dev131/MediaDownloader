@@ -175,17 +175,16 @@ function createVideoBackground() {
     const video = document.getElementById("bgVideo");
     if (!video) return;
 
-    const localSrc = "./assets/video/background.mp4?v=" + Date.now(); // cache-bust local
     const fallbackSrc = "https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4";
 
-    // ensure playback on mobile
+    // mobile-friendly autoplay
     video.muted = true;
     video.loop = true;
     video.autoplay = true;
     video.playsInline = true;
+    video.setAttribute("webkit-playsinline", "true");
 
-    // explicitly prefer local upload and start loading
-    video.src = localSrc;
+    // Do not override src; rely on <source> order for best autoplay compliance
     if (video.load) video.load();
 
     const tryPlay = () => {
@@ -199,8 +198,9 @@ function createVideoBackground() {
     document.addEventListener("pointerdown", tryPlay);
     document.addEventListener("touchstart", tryPlay, { passive: true });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) tryPlay(); });
+    video.addEventListener("playing", () => { document.body.classList.add("video-playing"); }, { once: true });
 
-    // Timeout fallback: if the local source doesn't become ready, switch to CDN
+    // Timeout fallback: if the chosen source doesn't become ready, switch to CDN
     const fallbackTimer = setTimeout(() => {
       if (video.readyState < 2) {
         video.crossOrigin = "anonymous";
@@ -208,7 +208,7 @@ function createVideoBackground() {
         if (video.load) video.load();
         tryPlay();
       }
-    }, 1500);
+    }, 1200);
 
     const setupTexture = () => {
       if (bgVideoTexture) return;
@@ -481,6 +481,29 @@ function pushTrail(x, y, z) {
   if (trailGeom) trailGeom.attributes.position.needsUpdate = true;
 }
 
+// Schedule bloom post-processing after initial paint for faster load
+function schedulePostProcessing() {
+  const cb = () => {
+    try {
+      const renderPass = new THREE.RenderPass(scene, camera);
+      const isMobileViewportBloom = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+      const unrealBloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        isMobileViewportBloom ? 0.6 : 0.9,
+        0.6,
+        0.02
+      );
+      composer = new THREE.EffectComposer(renderer);
+      composer.addPass(renderPass);
+      composer.addPass(unrealBloomPass);
+    } catch (e) {
+      composer = null;
+    }
+  };
+  if ("requestIdleCallback" in window) requestIdleCallback(cb, { timeout: 1000 });
+  else setTimeout(cb, 250);
+}
+
 function animate() {
   requestAnimationFrame(animate);
   if (paused) return;
@@ -560,13 +583,14 @@ function animate() {
     holoAvatar.material.uniforms.time.value = t;
   }
 
-  // update background video texture if present
-  if (bgVideoTexture) {
-    bgVideoTexture.needsUpdate = true;
-  }
+>
+// update background video texture if present
+if (bgVideoTexture) {
+  bgVideoTexture.needsUpdate = true;
+}
 
-  if (composer) composer.render();
-  else renderer.render(scene, camera);
+// smooth camera and bg video parallax based on scroll
+const camTy = 0.6 + Math.min(0. camera);
 }
 
 function onResize() {

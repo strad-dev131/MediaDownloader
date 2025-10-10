@@ -39,6 +39,20 @@
       <!-- Fallback: cyber grid -->
       <source src="https://cdn.pixabay.com/video/2022/08/25/129193-748610003_large.mp4" type="video/mp4" />
     </video>
+    <script>
+      (function(){
+        var v = document.getElementById('bgVideo');
+        if (!v) return;
+        v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('webkit-playsinline','true');
+        var play = function(){ try{ v.play().catch(function(){}); }catch(e){} };
+        v.addEventListener('canplay', play, { once: true });
+        v.addEventListener('loadeddata', play, { once: true });
+        v.addEventListener('playing', function(){ document.body.classList.add('video-playing'); }, { once: true });
+        play();
+        document.addEventListener('pointerdown', play, { once: true });
+        document.addEventListener('touchstart', play, { passive: true, once: true });
+      })();
+    </script>
 
     <div id="overlay"></div>
     <canvas id="scene"></canvas>
@@ -312,6 +326,6 @@
       <p>© <span id="year"></span> Siddhartha Abhimanyu — Built with Three.js</p>
     </footer>
 
-    <script defer src="./main.js?v=10"></script>
+    <script defer src="./main.js?v=11"></script>
   </body>
 </html>

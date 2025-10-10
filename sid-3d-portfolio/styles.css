@@ -38,6 +38,11 @@ body{ margin: 0; overflow-x: hidden; cursor: crosshair; }
   z-index: 1;
   pointer-events: none;
   background: radial-gradient(120% 120% at 50% 20%, rgba(5,6,11,0.85) 0%, rgba(5,6,11,0.65) 40%, rgba(5,6,11,0.45) 100%);
+  opacity: 0.8;
+  transition: opacity .4s ease;
+}
+body.video-playing #overlay{
+  opacity: 0.45;
 }
 
 /* WebGL canvas sits on top of video + overlay */
