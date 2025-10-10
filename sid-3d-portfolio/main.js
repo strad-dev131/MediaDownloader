@@ -168,19 +168,36 @@ function createVideoBackground() {
     const video = document.getElementById("bgVideo");
     if (!video) return;
 
+    const localSrc = "./assets/video/background.mp4";
+    const fallbackSrc = "https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4";
+
     // ensure playback on mobile
     video.muted = true;
     video.loop = true;
     video.autoplay = true;
     video.playsInline = true;
 
+    // Prefer local upload
+    video.src = localSrc;
+
     const tryPlay = () => {
       if (video.paused) {
         video.play().catch(() => {});
       }
     };
-    // attempt immediately and on user interaction/visibility changes
-    tryPlay();
+
+    const useFallback = () => {
+      if (!video.currentSrc || !video.currentSrc.includes(fallbackSrc)) {
+        video.crossOrigin = "anonymous";
+        video.src = fallbackSrc;
+        tryPlay();
+      }
+    };
+
+    video.addEventListener("error", useFallback);
+    video.addEventListener("stalled", useFallback);
+    video.addEventListener("emptied", useFallback);
+    video.addEventListener("canplay", tryPlay);
     document.addEventListener("pointerdown", tryPlay);
     document.addEventListener("touchstart", tryPlay, { passive: true });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) tryPlay(); });
