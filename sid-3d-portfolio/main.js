@@ -37,6 +37,23 @@ document.querySelectorAll(".section").forEach(s => io.observe(s));
 // Theme toggle with persistence and full palette switch via data-theme
 const themeToggle = document.getElementById("themeToggle");
 
+function updateAccentVisuals() {
+  try {
+    const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+    if (accent) {
+      // update pointer trail and glow to match current accent
+      if (pointerTrail && pointerTrail.material) {
+        pointerTrail.material.color = new THREE.Color(accent);
+      }
+      if (pointerGlow && pointerGlow.material) {
+        const c = new THREE.Color(accent);
+        pointerGlow.material.color = c;
+        pointerGlow.material.emissive = c;
+      }
+    }
+  } catch(_) {}
+}
+
 function applyTheme(theme) {
   const isAltTheme = theme === "alt";
   if (isAltTheme) {
@@ -49,6 +66,8 @@ function applyTheme(theme) {
   document.documentElement.style.setProperty("--accent-2", isAltTheme ? "#ff6cff" : "#8a6cff");
   // update button label for clarity
   if (themeToggle) themeToggle.textContent = isAltTheme ? "Theme: Alt" : "Theme";
+  // sync 3D visuals (trail/glow) with current accent
+  updateAccentVisuals();
 }
 
 // Initialize theme from localStorage
@@ -470,21 +489,33 @@ function createOrbiters() {
 
 // Pointer trail particles
 function createPointerTrail() {
-  trailMax = window.innerWidth < 640 ? 36 : 70;
+  const isMobile = window.innerWidth < 640 || isTouchDevice;
+  trailMax = isMobile ? 48 : 90;
   trailPositions = new Float32Array(trailMax * 3);
   trailGeom = new THREE.BufferGeometry();
   trailGeom.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
+
+  // Use current CSS accent color for the trail
+  let accent = "#6cf9ff";
+  try {
+    const cssAccent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+    if (cssAccent) accent = cssAccent;
+  } catch(_) {}
+
   const mat = new THREE.PointsMaterial({
-    color: 0x88eaff,
-    size: 0.025,
+    color: new THREE.Color(accent),
+    size: isMobile ? 0.035 : 0.06,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.9,
     depthWrite: false,
     blending: THREE.AdditiveBlending
   });
   pointerTrail = new THREE.Points(trailGeom, mat);
   pointerTrail.renderOrder = 3;
   scene.add(pointerTrail);
+
+  // Sync visuals with theme
+  updateAccentVisuals();
 }
 
 function pushTrail(x, y, z) {
