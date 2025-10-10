@@ -1,116 +1,133 @@
-// Year
-// Year
-(function(){
+// Year in footer or wherever #year exists
+(function () {
   var yEl = document.getElementById("year");
   if (yEl) yEl.textContent = String(new Date().getFullYear());
 })();
-// Anchor navigation: smooth scroll and respect section scroll-margin-top
-(function(){
+
+// Anchor navigation: smooth scroll respecting CSS scroll-margin-top
+(function () {
   var links = document.querySelectorAll('.site-header nav a[href^="#"]');
-  links.forEach(function(a){
-    a.addEventListener("click", function(e){
-      var id = a.getAttribute("href");
-      var el = id && document.querySelector(id);
-      if (!el) return;
-      e.preventDefault();
-      if (el.scrollIntoView) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        var header = document.querySelector(".site-header");
-        var headerH = header ? header.offsetHeight : 64;
-        var rect = el.getBoundingClientRect();
-        var targetY = rect.top + window.pageYOffset - headerH - 8;
-        window.scrollTo({ top: targetY, behavior: "smooth" });
-      }
-    }, { passive: false });
+  links.forEach(function (a) {
+    a.addEventListener(
+      "click",
+      function (e) {
+        var id = a.getAttribute("href");
+        var el = id && document.querySelector(id);
+        if (!el) return;
+        e.preventDefault();
+        if (el.scrollIntoView) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          var header = document.querySelector(".site-header");
+          var headerH = header ? header.offsetHeight : 64;
+          var rect = el.getBoundingClientRect();
+          var targetY = rect.top + window.pageYOffset - headerH - 8;
+          window.scrollTo({ top: targetY, behavior: "smooth" });
+        }
+      },
+      { passive: false }
+    );
   });
 })();
 
 // Reveal sections on scroll
-const io = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) entry.target.classList.add("revealed");
+(function () {
+  var io = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) entry.target.classList.add("revealed");
+      });
+    },
+    { threshold: 0.12 }
+  );
+  document.querySelectorAll(".section").forEach(function (s) {
+    io.observe(s);
   });
-}, { threshold: 0.12 });
-document.querySelectorAll(".section").forEach(s => io.observe(s));
+})();
 
-// Theme toggle with persistence and full palette switch via data-theme
-const themeToggle = document.getElementById("themeToggle");
+// Theme toggle with persistence
+var themeToggle = document.getElementById("themeToggle");
 
 function updateAccentVisuals() {
+  // Sync glow material to current accent; trail stays strictly blue
   try {
-    const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
-    if (accent) {
-      // update pointer trail and glow to match current accent
-      if (pointerTrail && pointerTrail.material) {
-        pointerTrail.material.color = new THREE.Color(accent);
-      }
-      if (pointerGlow && pointerGlow.material) {
-        const c = new THREE.Color(accent);
-        pointerGlow.material.color = c;
-        pointerGlow.material.emissive = c;
-      }
+    var accent = getComputedStyle(document.documentElement)
+      .getPropertyValue("--accent")
+      .trim();
+    if (accent && pointerGlow && pointerGlow.material) {
+      var c = new THREE.Color(accent);
+      pointerGlow.material.color = c;
+      pointerGlow.material.emissive = c;
     }
-  } catch(_) {}
+  } catch (_) {}
 }
 
 function applyTheme(theme) {
-  const isAltTheme = theme === "alt";
-  if (isAltTheme) {
-    document.documentElement.setAttribute("data-theme", "alt");
-  } else {
-    document.documentElement.removeAttribute("data-theme");
-  }
-  // update accent inline for immediate feedback (CSS handles the rest via variables)
-  document.documentElement.style.setProperty("--accent", isAltTheme ? "#ffae6c" : "#6cf9ff");
-  document.documentElement.style.setProperty("--accent-2", isAltTheme ? "#ff6cff" : "#8a6cff");
-  // update button label for clarity
-  if (themeToggle) themeToggle.textContent = isAltTheme ? "Theme: Alt" : "Theme";
-  // sync 3D visuals (trail/glow) with current accent
+  var isAlt = theme === "alt";
+  if (isAlt) document.documentElement.setAttribute("data-theme", "alt");
+  else document.documentElement.removeAttribute("data-theme");
+
+  // inline accents for immediate feedback (CSS handles rest)
+  document.documentElement.style.setProperty("--accent", isAlt ? "#ffae6c" : "#6cf9ff");
+  document.documentElement.style.setProperty("--accent-2", isAlt ? "#ff6cff" : "#8a6cff");
+
+  if (themeToggle) themeToggle.textContent = isAlt ? "Theme: Alt" : "Theme";
   updateAccentVisuals();
 }
 
 // Initialize theme from localStorage
-try {
-  const stored = localStorage.getItem("theme");
-  applyTheme(stored === "alt" ? "alt" : "default");
-} catch (_) {
-  applyTheme("default");
-}
+(function () {
+  try {
+    var stored = localStorage.getItem("theme");
+    applyTheme(stored === "alt" ? "alt" : "default");
+  } catch (_) {
+    applyTheme("default");
+  }
+})();
 
 // Toggle and persist
 if (themeToggle) {
-  themeToggle.addEventListener("click", () => {
-    const isAltNow = document.documentElement.getAttribute("data-theme") === "alt";
-    const next = isAltNow ? "default" : "alt";
+  themeToggle.addEventListener("click", function () {
+    var isAltNow = document.documentElement.getAttribute("data-theme") === "alt";
+    var next = isAltNow ? "default" : "alt";
     applyTheme(next);
-    try { localStorage.setItem("theme", next); } catch (_) {}
+    try {
+      localStorage.setItem("theme", next);
+    } catch (_) {}
   });
 }
 
 // THREE.JS SCENE
-let renderer, scene, camera, composer;
-let knot, particlesNear, particlesFar, title3D, tagline3D, pointerGlow, pointerTrail, holoAvatar, orbitersInst, orbitersData, rings, clock;
-let trailGeom, trailPositions, trailMax;
-let bgVideoMesh = null, bgVideoTexture = null;
-const canvas = document.getElementById("scene");
-const dummy = new THREE.Object3D();
-const heroEl = document.querySelector(".hero-content");
-const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-let paused = false;
-let firstRenderDone = false;
-document.addEventListener("visibilitychange", () => { paused = document.hidden; });
+var renderer, scene, camera, composer;
+var knot, particlesNear, particlesFar, title3D, tagline3D, pointerGlow, pointerTrail, holoAvatar, orbitersInst, orbitersData, rings, clock;
+var trailGeom, trailPositions, trailMax;
+var cursorParticles, cursorGeom, cursorMat, cursorMax = 180, cursorList = [];
+var bgVideoMesh = null, bgVideoTexture = null;
+var canvas = document.getElementById("scene");
+var dummy = new THREE.Object3D();
+var heroEl = document.querySelector(".hero-content");
+var isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+var paused = false;
+var firstRenderDone = false;
+var lastT = 0;
+document.addEventListener("visibilitychange", function () {
+  paused = document.hidden;
+});
 
 function init() {
   // Renderer
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
-  const isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-  const basePR = isMobileViewport ? 1.0 : Math.min(1.5, window.devicePixelRatio);
+  renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true,
+    alpha: true,
+    powerPreference: "high-performance",
+  });
+  var isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+  var basePR = isMobileViewport ? 1.0 : Math.min(1.5, window.devicePixelRatio);
   renderer.setPixelRatio(basePR);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  // Make canvas transparent so HTML video shows through
-  renderer.setClearColor(0x000000, 0);
+  renderer.setClearColor(0x000000, 0); // transparent
 
   // Scene and camera
   scene = new THREE.Scene();
@@ -119,101 +136,105 @@ function init() {
   camera.position.set(0, 0.6, 3.2);
 
   // Background 3D video plane (behind everything)
-createVideoBackground();
+  createVideoBackground();
 
-// Lights
-const hemi = new THREE.HemisphereLight(0x88ccff, 0x223344, 0.7);
-const dir = new THREE.DirectionalLight(0xaaccff, 0.9);
-dir.position.set(2.5, 3, 2.5);
-scene.add(hemi, dir);
+  // Lights
+  var hemi = new THREE.HemisphereLight(0x88ccff, 0x223344, 0.7);
+  var dir = new THREE.DirectionalLight(0xaaccff, 0.9);
+  dir.position.set(2.5, 3, 2.5);
+  scene.add(hemi, dir);
 
-// Torus Knot (hero centerpiece)
-const geo = new THREE.TorusKnotGeometry(0.62, 0.18, 320, 32, 2, 3);
-const mat = new THREE.MeshStandardMaterial({
-  color: 0x77ddff,
-  metalness: 0.75,
-  roughness: 0.22,
-  emissive: 0x112233,
-  envMapIntensity: 1.0
-});
-knot = new THREE.Mesh(geo, mat);
-knot.position.set(0, 0.5, 0);
-scene.add(knot);
+  // Torus Knot (hero centerpiece)
+  var geo = new THREE.TorusKnotGeometry(0.62, 0.18, 320, 32, 2, 3);
+  var mat = new THREE.MeshStandardMaterial({
+    color: 0x77ddff,
+    metalness: 0.75,
+    roughness: 0.22,
+    emissive: 0x112233,
+    envMapIntensity: 1.0,
+  });
+  knot = new THREE.Mesh(geo, mat);
+  knot.position.set(0, 0.5, 0);
+  scene.add(knot);
 
-// Starfield - near layer
-const isMobileViewport = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-const nearCount = isMobileViewport ? 300 : 900;
-particlesNear = makeStarfield(nearCount, 3.2, 0x77ffff, 0.022);
-scene.add(particlesNear);
+  // Starfield - near layer
+  var nearCount = isMobileViewport ? 300 : 900;
+  particlesNear = makeStarfield(nearCount, 3.2, 0x77ffff, 0.022);
+  scene.add(particlesNear);
 
-// Starfield - far layer
-const isMobileViewport2 = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
-const farCount = isMobileViewport2 ? 600 : 1400;
-particlesFar = makeStarfield(farCount, 8.0, 0x88bbff, 0.016);
-scene.add(particlesFar);
+  // Starfield - far layer
+  var farCount = isMobileViewport ? 600 : 1400;
+  particlesFar = makeStarfield(farCount, 8.0, 0x88bbff, 0.016);
+  scene.add(particlesFar);
 
-// Pointer glow (small emissive sphere that follows cursor)
-const glowGeo = new THREE.SphereGeometry(0.06, 24, 24);
-const glowMat = new THREE.MeshStandardMaterial({
-  color: 0xff66ff,
-  emissive: 0xff33aa,
-  emissiveIntensity: 1.5,
-  metalness: 0.2,
-  roughness: 0.4
-});
-pointerGlow = new THREE.Mesh(glowGeo, glowMat);
-pointerGlow.position.set(0, 0.8, 1.4);
-scene.add(pointerGlow);
+  // Pointer glow (small emissive sphere that follows cursor)
+  var glowGeo = new THREE.SphereGeometry(0.06, 24, 24);
+  var glowMat = new THREE.MeshStandardMaterial({
+    color: 0x6cf9ff,
+    emissive: 0x2a7bff,
+    emissiveIntensity: 1.5,
+    metalness: 0.2,
+    roughness: 0.4,
+  });
+  pointerGlow = new THREE.Mesh(glowGeo, glowMat);
+  pointerGlow.position.set(0, 0.8, 1.4);
+  scene.add(pointerGlow);
 
-// 3D extras scheduled to keep first frame fast
-createGlowRings();
-scheduleHeavy();
+  // Glow rings
+  createGlowRings();
 
-// Post-processing bloom (scheduled after initial frame for faster first paint)
-schedulePostProcessing();
+  // Heavier extras after first paint
+  scheduleHeavy();
 
-// Subtle entrance animation
-gsap.from(".hero .avatar", { y: 20, opacity: 0, duration: 0.8, ease: "power2.out" });
-gsap.from(".hero h1", { y: 20, opacity: 0, duration: 0.9, delay: 0.1, ease: "power2.out" });
-gsap.from(".hero .subtitle", { y: 20, opacity: 0, duration: 0.9, delay: 0.2, ease: "power2.out" });
-gsap.from(".hero .cta", { y: 20, opacity: 0, duration: 0.9, delay: 0.3, ease: "power2.out" });
+  // Post-processing
+  schedulePostProcessing();
 
-clock = new THREE.Clock();
-animate();
+  // Entrance animations (if gsap available)
+  if (typeof gsap !== "undefined") {
+    gsap.from(".hero .avatar", { y: 20, opacity: 0, duration: 0.8, ease: "power2.out" });
+    gsap.from(".hero h1", { y: 20, opacity: 0, duration: 0.9, delay: 0.1, ease: "power2.out" });
+    gsap.from(".hero .subtitle", { y: 20, opacity: 0, duration: 0.9, delay: 0.2, ease: "power2.out" });
+    gsap.from(".hero .cta", { y: 20, opacity: 0, duration: 0.9, delay: 0.3, ease: "power2.out" });
+  }
+
+  clock = new THREE.Clock();
+  animate();
 }
 
 function makeStarfield(count, radius, color, size) {
-  const g = new THREE.BufferGeometry();
-  const arr = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    const r = radius * (0.6 + Math.random() * 0.6);
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    const x = r * Math.cos(theta) * Math.sin(phi);
-    const y = r * Math.cos(phi) * 0.7;
-    const z = r * Math.sin(theta) * Math.sin(phi);
-    arr.set([x, y, z], i * 3);
+  var g = new THREE.BufferGeometry();
+  var arr = new Float32Array(count * 3);
+  for (var i = 0; i < count; i++) {
+    var r = radius * (0.6 + Math.random() * 0.6);
+    var theta = Math.random() * Math.PI * 2;
+    var phi = Math.acos(2 * Math.random() - 1);
+    var x = r * Math.cos(theta) * Math.sin(phi);
+    var y = r * Math.cos(phi) * 0.7;
+    var z = r * Math.sin(theta) * Math.sin(phi);
+    arr[i * 3] = x;
+    arr[i * 3 + 1] = y;
+    arr[i * 3 + 2] = z;
   }
   g.setAttribute("position", new THREE.BufferAttribute(arr, 3));
-  const m = new THREE.PointsMaterial({
-    size,
-    color,
+  var m = new THREE.PointsMaterial({
+    size: size,
+    color: color,
     transparent: true,
     opacity: 0.85,
-    depthWrite: false
+    depthWrite: false,
   });
-  const pts = new THREE.Points(g, m);
-  pts.renderOrder = 0; // ensure background layer
+  var pts = new THREE.Points(g, m);
+  pts.renderOrder = 0; // background layer
   return pts;
 }
 
 // Create a video texture background plane (uses the HTML video element as source)
 function createVideoBackground() {
   try {
-    const video = document.getElementById("bgVideo");
+    var video = document.getElementById("bgVideo");
     if (!video) return;
 
-    const fallbackSrc = "https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4";
+    var fallbackSrc = "https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4";
 
     // mobile-friendly autoplay
     video.muted = true;
@@ -221,25 +242,25 @@ function createVideoBackground() {
     video.autoplay = true;
     video.playsInline = true;
     video.setAttribute("webkit-playsinline", "true");
-
-    // Do not override src; rely on <source> order for best autoplay compliance
     if (video.load) video.load();
 
-    const tryPlay = () => {
+    var tryPlay = function () {
       if (video.paused) {
-        video.play().catch(() => {});
+        video.play().catch(function () {});
       }
     };
 
-    // Attempt immediate playback and on user interaction/visibility changes
     tryPlay();
-    document.addEventListener("pointerdown", tryPlay);
-    document.addEventListener("touchstart", tryPlay, { passive: true });
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) tryPlay(); });
-    video.addEventListener("playing", () => { document.body.classList.add("video-playing"); }, { once: true });
+    document.addEventListener("pointerdown", tryPlay, { once: true });
+    document.addEventListener("touchstart", tryPlay, { passive: true, once: true });
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) tryPlay();
+    });
+    video.addEventListener("playing", function () {
+      document.body.classList.add("video-playing");
+    }, { once: true });
 
-    // Timeout fallback: if the chosen source doesn't become ready, switch to CDN
-    const fallbackTimer = setTimeout(() => {
+    var fallbackTimer = setTimeout(function () {
       if (video.readyState < 2) {
         video.crossOrigin = "anonymous";
         video.src = fallbackSrc;
@@ -248,7 +269,7 @@ function createVideoBackground() {
       }
     }, 600);
 
-    const setupTexture = () => {
+    var setupTexture = function () {
       if (bgVideoTexture) return;
       clearTimeout(fallbackTimer);
       tryPlay();
@@ -258,8 +279,8 @@ function createVideoBackground() {
       bgVideoTexture.minFilter = THREE.LinearFilter;
       bgVideoTexture.magFilter = THREE.LinearFilter;
 
-      const mat = new THREE.MeshBasicMaterial({ map: bgVideoTexture, depthWrite: false });
-      const geo = new THREE.PlaneGeometry(1, 1);
+      var mat = new THREE.MeshBasicMaterial({ map: bgVideoTexture, depthWrite: false });
+      var geo = new THREE.PlaneGeometry(1, 1);
       bgVideoMesh = new THREE.Mesh(geo, mat);
       bgVideoMesh.position.set(0, 0.5, -5);
       bgVideoMesh.renderOrder = -1; // behind everything
@@ -270,13 +291,10 @@ function createVideoBackground() {
     if (video.readyState >= 2) {
       setupTexture();
     } else {
-      video.addEventListener("canplay", setupTexture, { once: true });
-      video.addEventListener("canplaythrough", setupTexture, { once: true });
-      video.addEventListener("playing", setupTexture, { once: true });
-      video.addEventListener("loadeddata", setupTexture, { once: true });
-      video.addEventListener("loadedmetadata", setupTexture, { once: true });
-      // also catch error/stall and switch to fallback then set up texture
-      const useFallbackAndSetup = () => {
+      ["canplay", "canplaythrough", "playing", "loadeddata", "loadedmetadata"].forEach(function (evt) {
+        video.addEventListener(evt, setupTexture, { once: true });
+      });
+      var useFallbackAndSetup = function () {
         clearTimeout(fallbackTimer);
         video.crossOrigin = "anonymous";
         video.src = fallbackSrc;
@@ -284,9 +302,9 @@ function createVideoBackground() {
         video.addEventListener("canplay", setupTexture, { once: true });
         tryPlay();
       };
-      video.addEventListener("error", useFallbackAndSetup, { once: true });
-      video.addEventListener("stalled", useFallbackAndSetup, { once: true });
-      video.addEventListener("emptied", useFallbackAndSetup, { once: true });
+      ["error", "stalled", "emptied"].forEach(function (evt) {
+        video.addEventListener(evt, useFallbackAndSetup, { once: true });
+      });
     }
   } catch (e) {
     bgVideoMesh = null;
@@ -295,10 +313,10 @@ function createVideoBackground() {
 
 function buildTitle3D() {
   try {
-    const loader = new THREE.FontLoader();
-    loader.load("https://unpkg.com/three@0.162.0/examples/fonts/helvetiker_bold.typeface.json", (font) => {
-      const textGeo = new THREE.TextGeometry("SID", {
-        font,
+    var loader = new THREE.FontLoader();
+    loader.load("https://unpkg.com/three@0.162.0/examples/fonts/helvetiker_bold.typeface.json", function (font) {
+      var textGeo = new THREE.TextGeometry("SID", {
+        font: font,
         size: 0.42,
         height: 0.08,
         curveSegments: 8,
@@ -306,14 +324,14 @@ function buildTitle3D() {
         bevelThickness: 0.02,
         bevelSize: 0.01,
         bevelOffset: 0,
-        bevelSegments: 2
+        bevelSegments: 2,
       });
       textGeo.center();
-      const textMat = new THREE.MeshStandardMaterial({
+      var textMat = new THREE.MeshStandardMaterial({
         color: 0x6cf9ff,
         emissive: 0x224455,
         metalness: 0.85,
-        roughness: 0.12
+        roughness: 0.12,
       });
       title3D = new THREE.Mesh(textGeo, textMat);
       title3D.position.set(0, 1.28, -0.2);
@@ -326,21 +344,21 @@ function buildTitle3D() {
 
 function buildTagline3D() {
   try {
-    const loader = new THREE.FontLoader();
-    loader.load("https://unpkg.com/three@0.162.0/examples/fonts/helvetiker_regular.typeface.json", (font) => {
-      const tg = new THREE.TextGeometry("Team Leadership • Web Bot Dev • Ethical Hacking", {
-        font,
+    var loader = new THREE.FontLoader();
+    loader.load("https://unpkg.com/three@0.162.0/examples/fonts/helvetiker_regular.typeface.json", function (font) {
+      var tg = new THREE.TextGeometry("Team Leadership • Web Bot Dev • Ethical Hacking", {
+        font: font,
         size: 0.12,
         height: 0.02,
         curveSegments: 6,
-        bevelEnabled: false
+        bevelEnabled: false,
       });
       tg.center();
-      const mat = new THREE.MeshStandardMaterial({
+      var mat = new THREE.MeshStandardMaterial({
         color: 0x88eaff,
         emissive: 0x123344,
         metalness: 0.6,
-        roughness: 0.35
+        roughness: 0.35,
       });
       tagline3D = new THREE.Mesh(tg, mat);
       tagline3D.position.set(0, 0.98, 0.1);
@@ -353,23 +371,20 @@ function buildTagline3D() {
 }
 
 function buildHologramAvatar() {
-  const texLoader = new THREE.TextureLoader();
+  var texLoader = new THREE.TextureLoader();
   texLoader.setCrossOrigin("anonymous");
 
-  const sources = [
+  var sources = [
     "./assets/images/avatar.png",
     "./assets/images/avatar.jpg",
-    "https://api.dicebear.com/7.x/bottts/png?seed=Sid&size=512&backgroundType=gradient&backgroundColor=6cf9ff,8a6cff"
+    "https://api.dicebear.com/7.x/bottts/png?seed=Sid&size=512&backgroundType=gradient&backgroundColor=6cf9ff,8a6cff",
   ];
 
-  const buildMesh = (tex) => {
+  function buildMesh(tex) {
     tex.colorSpace = THREE.SRGBColorSpace;
-    const plane = new THREE.PlaneGeometry(0.9, 0.9, 1, 1);
-    const mat = new THREE.ShaderMaterial({
-      uniforms: {
-        tDiffuse: { value: tex },
-        time: { value: 0.0 }
-      },
+    var plane = new THREE.PlaneGeometry(0.9, 0.9, 1, 1);
+    var mat = new THREE.ShaderMaterial({
+      uniforms: { tDiffuse: { value: tex }, time: { value: 0.0 } },
       vertexShader: `
         varying vec2 vUv;
         varying float vFresnel;
@@ -387,7 +402,6 @@ function buildHologramAvatar() {
         varying vec2 vUv;
         varying float vFresnel;
 
-        // simple rgb shift
         vec3 rgbShift(vec2 uv, float amt) {
           float a = amt;
           float r = texture2D(tDiffuse, uv + vec2(a, 0.0)).r;
@@ -404,52 +418,45 @@ function buildHologramAvatar() {
           vec3 col = rgbShift(vUv, 0.003 + 0.002 * sin(time * 4.0));
           col += scan + flicker + noise;
 
-          // holographic tint
           vec3 tint = vec3(0.6, 1.0, 1.0);
           col = mix(col, col * tint, 0.35);
 
-          // fresnel rim glow
           col += vFresnel * vec3(0.3, 0.5, 0.8);
 
           gl_FragColor = vec4(col, 0.92);
         }
       `,
       transparent: true,
-      depthWrite: false
+      depthWrite: false,
     });
     holoAvatar = new THREE.Mesh(plane, mat);
     holoAvatar.position.set(-1.2, 0.95, 0.2);
     holoAvatar.rotation.y = 0.12;
     scene.add(holoAvatar);
-  };
+  }
 
-  // Try local PNG, then local JPG, then DiceBear
-  const tryLoad = (i = 0) => {
+  function tryLoad(i) {
     if (i >= sources.length) return;
-    texLoader.load(sources[i], (tex) => {
-      buildMesh(tex);
-    }, undefined, () => {
-      tryLoad(i + 1);
-    });
-  };
+    texLoader.load(sources[i], function (tex) { buildMesh(tex); }, undefined, function () { tryLoad(i + 1); });
+  }
   tryLoad(0);
 }
 
 // Glow rings around the centerpiece
 function createGlowRings() {
   rings = [];
-  const colors = [0x6cf9ff, 0x8a6cff, 0x9af0ff];
-  const radii = [0.95, 1.25, 1.6];
-  const thickness = [0.014, 0.011, 0.009];
-  for (let i = 0; i < radii.length; i++) {
-    const geo = new THREE.TorusGeometry(radii[i], thickness[i], 16, 60); // fewer segments for performance
-    const mat = new THREE.MeshBasicMaterial({
+  var colors = [0x6cf9ff, 0x8a6cff, 0x9af0ff];
+  var radii = [0.95, 1.25, 1.6];
+  var thickness = [0.014, 0.011, 0.009];
+  for (var i = 0; i < radii.length; i++) {
+    var geo = new THREE.TorusGeometry(radii[i], thickness[i], 16, 60);
+    var mat = new THREE.MeshBasicMaterial({
       color: colors[i],
       transparent: true,
       opacity: 0.5,
-      blending: THREE.AdditiveBlending
+      blending: THREE.AdditiveBlending,
     });
-    const ring = new THREE.Mesh(geo, mat);
+    var ring = new THREE.Mesh(geo, mat);
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.5;
     rings.push(ring);
@@ -457,29 +464,25 @@ function createGlowRings() {
   }
 }
 
-// Instanced orbiting shapes for extra 3D motion
+// Instanced orbiting shapes
 function createOrbiters() {
-  const count = (window.matchMedia("(max-width: 640px)").matches || isTouchDevice) ? 70 : 160;
-  const geo = new THREE.IcosahedronGeometry(0.05, 0);
-  const mat = new THREE.MeshStandardMaterial({
+  var count = (window.matchMedia("(max-width: 640px)").matches || isTouchDevice) ? 70 : 160;
+  var geo = new THREE.IcosahedronGeometry(0.05, 0);
+  var mat = new THREE.MeshStandardMaterial({
     color: 0x9af0ff,
     emissive: 0x223344,
     metalness: 0.7,
-    roughness: 0.32
+    roughness: 0.32,
   });
   orbitersInst = new THREE.InstancedMesh(geo, mat, count);
   orbitersData = [];
-  for (let i = 0; i < count; i++) {
-    const radius = 1.1 + Math.random() * 0.9;
-    const speed = 0.2 + Math.random() * 0.4;
-    const yAmp = 0.12 + Math.random() * 0.22;
-    const angle = Math.random() * Math.PI * 2;
-    orbitersData.push({ radius, speed, yAmp, angle });
-    dummy.position.set(
-      Math.cos(angle) * radius,
-      0.5 + Math.sin(angle) * yAmp,
-      Math.sin(angle) * radius
-    );
+  for (var i = 0; i < count; i++) {
+    var radius = 1.1 + Math.random() * 0.9;
+    var speed = 0.2 + Math.random() * 0.4;
+    var yAmp = 0.12 + Math.random() * 0.22;
+    var angle = Math.random() * Math.PI * 2;
+    orbitersData.push({ radius: radius, speed: speed, yAmp: yAmp, angle: angle });
+    dummy.position.set(Math.cos(angle) * radius, 0.5 + Math.sin(angle) * yAmp, Math.sin(angle) * radius);
     dummy.rotation.set(Math.random() * 0.6, Math.random() * 0.6, Math.random() * 0.6);
     dummy.updateMatrix();
     orbitersInst.setMatrixAt(i, dummy.matrix);
@@ -487,40 +490,29 @@ function createOrbiters() {
   scene.add(orbitersInst);
 }
 
-// Pointer trail particles
+// Pointer trail particles (fixed neon blue)
 function createPointerTrail() {
-  const isMobile = window.innerWidth < 640 || isTouchDevice;
+  var isMobile = window.innerWidth < 640 || isTouchDevice;
   trailMax = isMobile ? 48 : 90;
   trailPositions = new Float32Array(trailMax * 3);
   trailGeom = new THREE.BufferGeometry();
   trailGeom.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
-
-  // Use current CSS accent color for the trail
-  let accent = "#6cf9ff";
-  try {
-    const cssAccent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
-    if (cssAccent) accent = cssAccent;
-  } catch(_) {}
-
-  const mat = new THREE.PointsMaterial({
-    color: new THREE.Color(accent),
+  var mat = new THREE.PointsMaterial({
+    color: new THREE.Color(0x66ccff),
     size: isMobile ? 0.035 : 0.06,
     transparent: true,
     opacity: 0.9,
     depthWrite: false,
-    blending: THREE.AdditiveBlending
+    blending: THREE.AdditiveBlending,
   });
   pointerTrail = new THREE.Points(trailGeom, mat);
   pointerTrail.renderOrder = 3;
   scene.add(pointerTrail);
-
-  // Sync visuals with theme
-  updateAccentVisuals();
 }
 
 function pushTrail(x, y, z) {
   if (!trailPositions) return;
-  for (let i = trailMax - 1; i > 0; i--) {
+  for (var i = trailMax - 1; i > 0; i--) {
     trailPositions[i * 3] = trailPositions[(i - 1) * 3];
     trailPositions[i * 3 + 1] = trailPositions[(i - 1) * 3 + 1];
     trailPositions[i * 3 + 2] = trailPositions[(i - 1) * 3 + 2];
@@ -531,15 +523,73 @@ function pushTrail(x, y, z) {
   if (trailGeom) trailGeom.attributes.position.needsUpdate = true;
 }
 
+// Blue cursor particle bursts (ephemeral)
+function createCursorParticles() {
+  cursorGeom = new THREE.BufferGeometry();
+  cursorGeom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(cursorMax * 3), 3));
+  cursorGeom.setDrawRange(0, 0);
+
+  cursorMat = new THREE.PointsMaterial({
+    color: 0x56b7ff,
+    size: (window.innerWidth < 640 || isTouchDevice) ? 0.025 : 0.04,
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+
+  cursorParticles = new THREE.Points(cursorGeom, cursorMat);
+  cursorParticles.renderOrder = 4;
+  scene.add(cursorParticles);
+}
+
+function spawnCursorParticles(x, y, z, count) {
+  for (var i = 0; i < count; i++) {
+    var speed = 0.5 + Math.random() * 1.1;
+    var vx = (Math.random() - 0.5) * 0.6 * speed;
+    var vy = (Math.random() - 0.5) * 0.6 * speed;
+    var vz = (Math.random() - 0.5) * 0.8 * speed;
+    cursorList.push({ x: x, y: y, z: z, vx: vx, vy: vy, vz: vz, life: 0.8 + Math.random() * 0.6 });
+    if (cursorList.length > cursorMax) cursorList.shift();
+  }
+}
+
+function updateCursorParticles(dt) {
+  if (!cursorGeom) return;
+  var pos = cursorGeom.attributes.position.array;
+  var alive = 0;
+  for (var i = 0; i < cursorList.length; i++) {
+    var p = cursorList[i];
+    p.life -= dt;
+    if (p.life <= 0) continue;
+    p.vx *= 0.96;
+    p.vy *= 0.96;
+    p.vz *= 0.96;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.z += p.vz * dt;
+
+    pos[alive * 3] = p.x;
+    pos[alive * 3 + 1] = p.y;
+    pos[alive * 3 + 2] = p.z;
+    alive++;
+  }
+  cursorGeom.setDrawRange(0, alive);
+  cursorGeom.attributes.position.needsUpdate = true;
+
+  if (cursorList.length && alive < cursorList.length) {
+    cursorList = cursorList.filter(function (p) { return p.life > 0; });
+  }
+}
+
 // Schedule bloom post-processing after initial paint for faster load
 function schedulePostProcessing() {
-  const cb = () => {
-    // Skip bloom on low-power devices or small screens
-    const lowPower = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
+  var cb = function () {
+    var lowPower = window.matchMedia("(max-width: 640px)").matches || isTouchDevice;
     if (lowPower) { composer = null; return; }
     try {
-      const renderPass = new THREE.RenderPass(scene, camera);
-      const unrealBloomPass = new THREE.UnrealBloomPass(
+      var renderPass = new THREE.RenderPass(scene, camera);
+      var unrealBloomPass = new THREE.UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
         0.8,
         0.6,
@@ -556,15 +606,16 @@ function schedulePostProcessing() {
   else setTimeout(cb, 250);
 }
 
-// Schedule heavier assets after first paint to keep startup snappy
+// Heavier assets after first paint
 function scheduleHeavy() {
-  const exec = () => {
+  var exec = function () {
     try {
       buildTitle3D();
       buildTagline3D();
       buildHologramAvatar();
       createOrbiters();
       createPointerTrail();
+      createCursorParticles();
     } catch (_) {}
   };
   if ("requestIdleCallback" in window) requestIdleCallback(exec, { timeout: 700 });
@@ -574,20 +625,21 @@ function scheduleHeavy() {
 function animate() {
   requestAnimationFrame(animate);
   if (paused) return;
-  const t = clock.getElapsedTime();
-  frameCounter++;
+  var t = clock.getElapsedTime();
+  var dt = Math.min(0.05, t - lastT);
+  lastT = t;
 
   // centerpiece motion
-  const baseRotY = t * 0.25;
-  const baseRotX = Math.sin(t * 0.4) * 0.1;
+  var baseRotY = t * 0.25;
+  var baseRotX = Math.sin(t * 0.4) * 0.1;
   knot.rotation.y = THREE.MathUtils.lerp(knot.rotation.y, baseRotY + (mouse.x || 0) * 0.18, 0.08);
   knot.rotation.x = THREE.MathUtils.lerp(knot.rotation.x, baseRotX + (mouse.y || 0) * 0.12, 0.08);
-  const s = 1 + Math.sin(t * 0.8) * 0.03;
+  var s = 1 + Math.sin(t * 0.8) * 0.03;
   knot.scale.set(s, s, s);
 
-  // glow rings animate (every other frame for performance)
-  if (rings && rings.length && (frameCounter % 2 === 0)) {
-    rings.forEach((ring, i) => {
+  // rings animate (every other frame)
+  if (rings && rings.length && (Math.floor(t * 60) % 2 === 0)) {
+    rings.forEach(function (ring, i) {
       ring.rotation.y = t * (0.12 + i * 0.08);
       ring.rotation.z = Math.sin(t * (0.25 + i * 0.14)) * 0.25;
       ring.scale.setScalar(1 + Math.sin(t * (0.9 + i * 0.2)) * 0.02);
@@ -595,27 +647,19 @@ function animate() {
   }
 
   // orbiters motion (every other frame)
-  if (orbitersInst && orbitersData && (frameCounter % 2 === 0)) {
-    for (let i = 0; i < orbitersData.length; i++) {
-      const d = orbitersData[i];
-      const ang = d.angle + t * d.speed;
-      dummy.position.set(
-        Math.cos(ang) * d.radius,
-        0.5 + Math.sin(t * 2.0 + i) * d.yAmp,
-        Math.sin(ang) * d.radius
-      );
-      dummy.rotation.set(
-        Math.sin(t + i) * 0.6,
-        Math.cos(t * 0.7 + i) * 0.6,
-        Math.sin(t * 0.5 + i) * 0.6
-      );
+  if (orbitersInst && orbitersData && (Math.floor(t * 60) % 2 === 0)) {
+    for (var i = 0; i < orbitersData.length; i++) {
+      var d = orbitersData[i];
+      var ang = d.angle + t * d.speed;
+      dummy.position.set(Math.cos(ang) * d.radius, 0.5 + Math.sin(t * 2.0 + i) * d.yAmp, Math.sin(ang) * d.radius);
+      dummy.rotation.set(Math.sin(t + i) * 0.6, Math.cos(t * 0.7 + i) * 0.6, Math.sin(t * 0.5 + i) * 0.6);
       dummy.updateMatrix();
       orbitersInst.setMatrixAt(i, dummy.matrix);
     }
     orbitersInst.instanceMatrix.needsUpdate = true;
   }
 
-  // starfields drift parallax
+  // starfields drift
   if (particlesNear) {
     particlesNear.rotation.y = t * 0.012;
     particlesNear.rotation.x = Math.sin(t * 0.04) * 0.012;
@@ -624,21 +668,20 @@ function animate() {
     particlesFar.rotation.y = -t * 0.007;
   }
 
-  // title shimmer
+  // title and tagline subtle motion
   if (title3D) {
     title3D.rotation.y = Math.sin(t * 0.2) * 0.08;
     title3D.position.y = 1.28 + Math.sin(t * 0.6) * 0.02;
   }
-  // tagline pulsing and hue shift effect
   if (tagline3D) {
     tagline3D.rotation.z = Math.sin(t * 0.3) * 0.02;
     tagline3D.position.y = 0.98 + Math.sin(t * 0.9) * 0.01;
-    const hue = (Math.sin(t * 0.5) * 0.5 + 0.5); // 0..1
-    const c = new THREE.Color().setHSL(0.55 + hue * 0.1, 0.8, 0.6);
+    var hue = (Math.sin(t * 0.5) * 0.5 + 0.5);
+    var c = new THREE.Color().setHSL(0.55 + hue * 0.1, 0.8, 0.6);
     tagline3D.material.color.copy(c);
   }
 
-  // pointer glow breathing + smooth follow
+  // pointer glow follow
   if (pointerGlow) {
     pointerGlow.scale.setScalar(1 + Math.sin(t * 2.0) * 0.06);
     if (typeof mouseWorld !== "undefined") {
@@ -651,25 +694,28 @@ function animate() {
     holoAvatar.material.uniforms.time.value = t;
   }
 
-  // update background video texture if present (every other frame)
-  if (bgVideoTexture && (frameCounter % 2 === 0)) {
+  // video texture update
+  if (bgVideoTexture && (Math.floor(t * 60) % 2 === 0)) {
     bgVideoTexture.needsUpdate = true;
   }
 
-  // smooth camera and bg video parallax based on scroll
-  const camTy = 0.6 + Math.min(0.7, scrollTargetY * 0.0006);
-  const camTz = 3.2 + Math.min(1.2, scrollTargetY * 0.0008);
+  // update blue cursor particles
+  updateCursorParticles(dt);
+
+  // parallax based on scroll
+  var camTy = 0.6 + Math.min(0.7, scrollTargetY * 0.0006);
+  var camTz = 3.2 + Math.min(1.2, scrollTargetY * 0.0008);
   camera.position.y = THREE.MathUtils.lerp(camera.position.y, camTy, 0.08);
   camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTz, 0.08);
   if (bgVideoMesh) {
-    const targetZ = -5 - Math.min(1.0, scrollTargetY * 0.0006);
+    var targetZ = -5 - Math.min(1.0, scrollTargetY * 0.0006);
     bgVideoMesh.position.z = THREE.MathUtils.lerp(bgVideoMesh.position.z, targetZ, 0.08);
   }
 
   if (composer) composer.render();
   else renderer.render(scene, camera);
 
-  // hide loader after first frame rendered
+  // hide loader after first frame
   if (!firstRenderDone) {
     firstRenderDone = true;
     if (window.hideLoader) window.hideLoader();
@@ -681,21 +727,21 @@ function onResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   if (composer) composer.setSize(window.innerWidth, window.innerHeight);
-  // adjust pixel ratio on resize for crispness and performance
+
   var pr = (window.innerWidth < 640 || isTouchDevice) ? 1.0 : Math.min(1.5, window.devicePixelRatio);
   renderer.setPixelRatio(pr);
 
-  // fit bg video plane to viewport aspect
+  // video plane fit
   if (bgVideoMesh) {
-    const aspect = window.innerWidth / window.innerHeight;
-    const height = 10; // fixed height in world units
-    const width = height * aspect;
+    var aspect = window.innerWidth / window.innerHeight;
+    var height = 10;
+    var width = height * aspect;
     bgVideoMesh.scale.set(width, height, 1);
     bgVideoMesh.position.set(0, 0.5, -5);
   }
 
-  // responsive positioning
-  const isMobile = window.innerWidth < 640;
+  // responsive positions
+  var isMobile = window.innerWidth < 640;
   if (title3D) title3D.position.set(0, isMobile ? 1.18 : 1.28, -0.2);
   if (tagline3D) tagline3D.position.set(0, isMobile ? 0.92 : 0.98, 0.1);
   if (holoAvatar) {
@@ -705,59 +751,60 @@ function onResize() {
 }
 window.addEventListener("resize", onResize);
 
-// Parallax based on scroll (smoothed in animation loop)
-let scrollTargetY = window.scrollY;
-window.addEventListener("scroll", () => {
-  scrollTargetY = window.scrollY;
+// Scroll parallax smoothing
+var scrollTargetY = window.scrollY || 0;
+window.addEventListener("scroll", function () {
+  scrollTargetY = window.scrollY || 0;
 }, { passive: true });
 
-// Mouse interaction (smooth, no heavy timelines)
-const mouse = new THREE.Vector2();
-const mouseWorld = new THREE.Vector3();
-window.addEventListener("mousemove", (e) => {
+// Mouse interaction
+var mouse = new THREE.Vector2();
+var mouseWorld = new THREE.Vector3();
+window.addEventListener("mousemove", function (e) {
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   mouseWorld.set(mouse.x * 0.8, 0.8 + mouse.y * 0.4, 1.4);
 
-  // hero tilt based on cursor (desktop only)
+  // hero tilt (desktop only)
   if (heroEl && !isTouchDevice) {
-    const tiltY = mouse.x * 6;     // left/right
-    const tiltX = mouse.y * -5;    // up/down
-    heroEl.style.transform = `rotateY(${tiltY}deg) rotateX(${tiltX}deg) translateZ(0)`;
+    var tiltY = mouse.x * 6;
+    var tiltX = mouse.y * -5;
+    heroEl.style.transform = "rotateY(" + tiltY + "deg) rotateX(" + tiltX + "deg) translateZ(0)";
   }
 
-  // leave a particle trail
+  // neon blue trail
   pushTrail(mouseWorld.x, mouseWorld.y, mouseWorld.z);
+
+  // spawn blue cursor particles
+  var burst = isTouchDevice ? 3 : 8;
+  spawnCursorParticles(mouseWorld.x, mouseWorld.y, mouseWorld.z, burst);
 }, { passive: true });
-window.addEventListener("mouseleave", () => {
+window.addEventListener("mouseleave", function () {
   if (heroEl) heroEl.style.transform = "none";
 });
 
-// Card hover glow + 3D tilt effect
-document.querySelectorAll(".card").forEach(card => {
-  const onMove = (e) => {
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    card.style.setProperty("--mx", `${x}px`);
-    card.style.setProperty("--my", `${y}px`);
+// Card hover glow + 3D tilt
+document.querySelectorAll(".card").forEach(function (card) {
+  function onMove(e) {
+    var rect = card.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+    card.style.setProperty("--mx", x + "px");
+    card.style.setProperty("--my", y + "px");
 
-    // 3D tilt
-    const nx = (x / rect.width) * 2 - 1;   // -1..1
-    const ny = (y / rect.height) * 2 - 1;  // -1..1
-    const rotY = nx * 6;   // left/right
-    const rotX = -ny * 6;  // up/down
-    card.style.transform = `rotateY(${rotY}deg) rotateX(${rotX}deg)`;
-  };
+    var nx = (x / rect.width) * 2 - 1;
+    var ny = (y / rect.height) * 2 - 1;
+    var rotY = nx * 6;
+    var rotX = -ny * 6;
+    card.style.transform = "rotateY(" + rotY + "deg) rotateX(" + rotX + "deg)";
+  }
   card.addEventListener("mousemove", onMove);
-  card.addEventListener("mouseleave", () => {
-    card.style.transform = "none";
-  });
+  card.addEventListener("mouseleave", function () { card.style.transform = "none"; });
 });
 
-// Fallback: ensure sections are visible if IntersectionObserver does not trigger
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".section").forEach(s => s.classList.add("revealed"));
+// Fallback reveal on DOM ready
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".section").forEach(function (s) { s.classList.add("revealed"); });
 });
 
 // Kick off
