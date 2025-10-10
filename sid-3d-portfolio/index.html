@@ -29,9 +29,11 @@
   <body>
     <!-- Fullscreen 3D background video -->
     <video id="bgVideo" autoplay muted loop playsinline preload="auto" poster="" aria-hidden="true">
-      <!-- Colorful neon tunnel -->
+      <!-- Local upload (preferred) -->
+      <source src="./assets/video/background.mp4" type="video/mp4" />
+      <!-- Fallback: Colorful neon tunnel -->
       <source src="https://cdn.pixabay.com/video/2023/04/11/157267-817306769_large.mp4" type="video/mp4" />
-      <!-- Fallback cyber grid -->
+      <!-- Fallback: cyber grid -->
       <source src="https://cdn.pixabay.com/video/2022/08/25/129193-748610003_large.mp4" type="video/mp4" />
     </video>
 

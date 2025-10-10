@@ -177,7 +177,7 @@ function createVideoBackground() {
     video.autoplay = true;
     video.playsInline = true;
 
-    // Prefer local upload
+    // Prefer local upload (overrides <source> selection if needed)
     video.src = localSrc;
 
     const tryPlay = () => {
@@ -187,6 +187,7 @@ function createVideoBackground() {
     };
 
     const useFallback = () => {
+      // switch to CDN fallback if local fails
       if (!video.currentSrc || !video.currentSrc.includes(fallbackSrc)) {
         video.crossOrigin = "anonymous";
         video.src = fallbackSrc;
@@ -197,23 +198,35 @@ function createVideoBackground() {
     video.addEventListener("error", useFallback);
     video.addEventListener("stalled", useFallback);
     video.addEventListener("emptied", useFallback);
-    video.addEventListener("canplay", tryPlay);
     document.addEventListener("pointerdown", tryPlay);
     document.addEventListener("touchstart", tryPlay, { passive: true });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) tryPlay(); });
 
-    bgVideoTexture = new THREE.VideoTexture(video);
-    bgVideoTexture.colorSpace = THREE.SRGBColorSpace;
-    bgVideoTexture.minFilter = THREE.LinearFilter;
-    bgVideoTexture.magFilter = THREE.LinearFilter;
+    const setupTexture = () => {
+      // build texture only once video can play
+      if (bgVideoTexture) return;
+      tryPlay();
+      bgVideoTexture = new THREE.VideoTexture(video);
+      bgVideoTexture.colorSpace = THREE.SRGBColorSpace;
+      bgVideoTexture.minFilter = THREE.LinearFilter;
+      bgVideoTexture.magFilter = THREE.LinearFilter;
 
-    const mat = new THREE.MeshBasicMaterial({ map: bgVideoTexture, depthWrite: false });
-    const geo = new THREE.PlaneGeometry(1, 1);
-    bgVideoMesh = new THREE.Mesh(geo, mat);
-    bgVideoMesh.position.set(0, 0.5, -5);
-    bgVideoMesh.renderOrder = -1; // behind everything
-    scene.add(bgVideoMesh);
-    onResize(); // fit to viewport
+      const mat = new THREE.MeshBasicMaterial({ map: bgVideoTexture, depthWrite: false });
+      const geo = new THREE.PlaneGeometry(1, 1);
+      bgVideoMesh = new THREE.Mesh(geo, mat);
+      bgVideoMesh.position.set(0, 0.5, -5);
+      bgVideoMesh.renderOrder = -1; // behind everything
+      scene.add(bgVideoMesh);
+      onResize(); // fit to viewport
+    };
+
+    // if already ready, setup immediately; otherwise wait for canplay
+    if (video.readyState >= 2) {
+      setupTexture();
+    } else {
+      video.addEventListener("canplay", setupTexture, { once: true });
+      video.addEventListener("loadeddata", setupTexture, { once: true });
+    }
   } catch (e) {
     // if video fails, we simply rely on the starfields and HTML video background
     bgVideoMesh = null;
