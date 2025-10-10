@@ -70,6 +70,9 @@
           // no video element found; remove loader quickly
           setTimeout(window.hideLoader, 500);
         }
+      // Manual enter handler to guarantee exit
+        var btn = document.getElementById('loaderEnter');
+        if (btn) btn.addEventListener('click', window.hideLoader, { once: true });
       })();
     </script>
 
