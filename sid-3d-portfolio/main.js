@@ -1,8 +1,16 @@
 // Year
 document.getElementById("year").textContent = new Date().getFullYear();
 
-// Native anchor navigation — rely on CSS scroll-behavior and scroll-margin.
-// No JS interception to avoid conflicts with fixed header and ensure reliability.
+// Anchor navigation: ensure smooth scroll and correct offset for fixed header
+document.querySelectorAll('.site-header nav a[href^="#"]').forEach(a => {
+  a.addEventListener("click", (e) => {
+    const id = a.getAttribute("href");
+    const el = id && document.querySelector(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, { passive: false });
+});
   }, { passive: false });
 });
 
