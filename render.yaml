@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: media-downloader
+    env: docker
+    autoDeploy: true
+    dockerfilePath: Dockerfile
+    plan: free
+    healthCheckPath: /health
+    disk:
+      name: downloads
+      mountPath: /data
+      sizeGB: 5
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: DOWNLOAD_DIR
+        value: "/data/downloads"
