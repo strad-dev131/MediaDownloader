@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Media Downloader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Media Downloader</h1>
+      <p>Download MP4 or MP3 from a YouTube or Instagram link.</p>
+    </header>
+    <main>
+      <form id="download-form" class="card">
+        <label for="url">Paste a YouTube or Instagram URL</label>
+        <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required>
+
+        <div class="format">
+          <label><input type="radio" name="format" value="mp4" checked> MP4 (video)</label>
+          <label><input type="radio" name="format" value="mp3"> MP3 (audio)</label>
+        </div>
+
+        <div class="agree">
+          <label>
+            <input type="checkbox" id="agree" required>
+            I confirm I own the content or have permission to download it, and will comply with platform terms.
+          </label>
+        </div>
+
+        <div class="agree" style="margin-top: 8px;">
+          <label>
+            <input type="checkbox" id="upload_catbox">
+            Upload to Catbox (public link)
+          </label>
+        </div>
+
+        <div id="catbox_userhash_wrap" style="display:none; margin: 6px 0 12px;">
+          <label for="catbox_userhash">Catbox userhash (optional, to associate uploads with your account)</label>
+          <input type="text" id="catbox_userhash" placeholder="Paste your Catbox userhash">
+        </div>
+
+        <button type="submit" id="submit">Download</button>
+      </form>
+
+      <div id="status" class="status" aria-live="polite"></div>
+      <div id="result" class="result"></div>
+
+      <footer class="legal">
+        <p>Use this tool only for content you own or have permission to download. Some platforms restrict downloading and you are responsible for complying with their terms.</p>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
