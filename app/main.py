@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -23,7 +24,11 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
-DOWNLOADS_DIR = BASE_DIR / "downloads"
+
+# Use env var DOWNLOAD_DIR if provided (for persistent disks)
+DEFAULT_DOWNLOADS_DIR = BASE_DIR / "downloads"
+DOWNLOADS_DIR = Path(os.getenv("DOWNLOAD_DIR", str(DEFAULT_DOWNLOADS_DIR)))
+
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
 

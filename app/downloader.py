@@ -1,8 +1,11 @@
 import glob
+import os
 from pathlib import Path
 from typing import Optional, Tuple
 
-DOWNLOAD_DIR = Path(__file__).resolve().parent.parent / "downloads"
+# Use env var DOWNLOAD_DIR if provided (for persistent disks on hosts like Render)
+DEFAULT_DOWNLOAD_DIR = Path(__file__).resolve().parent.parent / "downloads"
+DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", str(DEFAULT_DOWNLOAD_DIR)))
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
