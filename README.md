@@ -45,6 +45,17 @@ docker run --rm -p 8000:8000 media-downloader
 Open:
 - http://localhost:8000
 
+## Using a Static Frontend with a Remote API
+
+If you host `static/` on a static site (no backend), point it at your running API via a query param:
+
+```
+https://your-static-site.example.com/?api=https://your-backend.example.com
+```
+
+The frontend will send requests to `https://your-backend.example.com/api/...`.  
+CORS is enabled server-side for simplicity, but you can restrict origins in `app/main.py`.
+
 ## Catbox Upload (Optional)
 
 To get a public, shareable link hosted on Catbox:

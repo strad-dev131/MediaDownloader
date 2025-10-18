@@ -6,6 +6,10 @@ const uploadCatboxChk = document.getElementById("upload_catbox");
 const catboxUserhashWrap = document.getElementById("catbox_userhash_wrap");
 const catboxUserhashInput = document.getElementById("catbox_userhash");
 
+// Allow using a remote backend from a static host via ?api=https://backend.example.com
+const params = new URLSearchParams(window.location.search);
+const API_BASE = (params.get("api") || "").replace(/\/+$/, "");
+
 uploadCatboxChk.addEventListener("change", () => {
   catboxUserhashWrap.style.display = uploadCatboxChk.checked ? "block" : "none";
 });
@@ -26,7 +30,7 @@ form.addEventListener("submit", async (e) => {
   statusEl.textContent = "Downloading... This may take a moment.";
 
   try {
-    const resp = await fetch("/api/download", {
+    const resp = await fetch(`${API_BASE}/api/download`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, format, agree, upload_to_catbox, catbox_userhash }),
@@ -40,7 +44,7 @@ form.addEventListener("submit", async (e) => {
     statusEl.textContent = "Ready:";
 
     const a = document.createElement("a");
-    a.href = data.download_url;
+    a.href = `${API_BASE}${data.download_url}`;
     a.textContent = `Click here to download ${data.filename}`;
     a.className = "download-link";
     resultEl.appendChild(a);
