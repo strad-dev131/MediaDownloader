@@ -45,6 +45,29 @@ docker run --rm -p 8000:8000 media-downloader
 Open:
 - http://localhost:8000
 
+## Deploy on Render (Free)
+
+This repo includes `render.yaml` and a `Dockerfile` for a one-click Render deployment.
+
+Steps:
+1) Push this repo to your GitHub account.
+2) Go to https://render.com, create an account, and click "New +" → "Blueprint".
+3) Connect your repo containing this project.
+4) Render will read `render.yaml` and create a Web Service using the Dockerfile.
+5) Health check: `/health` (already configured).
+6) Wait for the build to complete; copy the service URL (e.g., `https://media-downloader.onrender.com`).
+
+Now:
+- Open the static site (e.g., the one deployed earlier), and pass your backend URL:
+  ```
+  https://k9gqoykybmw4.cosine.page/?api=https://media-downloader.onrender.com
+  ```
+- Or serve the static files from the same backend by visiting:
+  ```
+  https://media-downloader.onrender.com
+  ```
+  (Static files are mounted at `/` in the FastAPI app.)
+
 ## Using a Static Frontend with a Remote API
 
 If you host `static/` on a static site (no backend), point it at your running API via a query param:

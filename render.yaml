@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: media-downloader
+    env: docker
+    autoDeploy: true
+    dockerfilePath: Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

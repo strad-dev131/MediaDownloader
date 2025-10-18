@@ -44,6 +44,11 @@ def root():
     return (STATIC_DIR / "index.html").read_text(encoding="utf-8")
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.post("/api/download")
 def api_download(req: DownloadRequest):
     if not req.agree:
